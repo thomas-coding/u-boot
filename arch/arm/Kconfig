@@ -1228,6 +1228,10 @@ config ARCH_U8500
 	imply SYS_THUMB_BUILD
 	imply SYSRESET_SYSCON
 
+config TARGET_A15
+	bool "Support Virtual Platform A15"
+	select CPU_V7A
+
 config ARCH_VERSAL
 	bool "Support Xilinx Versal Platform"
 	select ARM64
@@ -2344,6 +2348,7 @@ source "board/vscom/baltos/Kconfig"
 source "board/phytium/durian/Kconfig"
 source "board/phytium/pomelo/Kconfig"
 source "board/xen/xenguest_arm64/Kconfig"
+source "board/virtual_platform/a15/Kconfig"
 
 source "arch/arm/Kconfig.debug"
 

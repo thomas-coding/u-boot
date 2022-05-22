@@ -128,3 +128,8 @@ endif
 
 # deprecated
 -include $(machdirs)/config.mk
+
+ifeq ($(CONFIG_TARGET_A15),y)
+arch-y = -march=armv7-a
+tune-y = -mtune=cortex-a15
+endif

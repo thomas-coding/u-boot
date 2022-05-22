@@ -1,0 +1,12 @@
+if TARGET_A15
+
+config SYS_BOARD
+	default "a15"
+
+config SYS_VENDOR
+	default "virtual_platform"
+
+config SYS_CONFIG_NAME
+	default "a15"
+
+endif
