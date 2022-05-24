@@ -10,10 +10,10 @@
 #ifndef __A15_H
 #define __A15_H
 
-/*  0x20000000 .. 0x27ffffff : DDR(128M) */
+/*  0x20000000 .. 0x2fffffff : DDR(128M) */
 #define PHYS_SDRAM			0x20000000
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define PHYS_SDRAM_SIZE		0x8000000 /* 128 MB */
+#define PHYS_SDRAM_SIZE		0x10000000 /* 256 MB */
 
 //define sp to u-boot 16M top
 #define CONFIG_SYS_INIT_SP_ADDR		0x21000000
