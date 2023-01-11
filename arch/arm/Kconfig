@@ -2092,6 +2092,11 @@ config ARCH_GXP
 	select OF_CONTROL
 	imply CMD_DM
 
+config TARGET_A55
+	bool "Support Virtual Platform A55"
+	select ARM64
+	select DM
+
 endchoice
 
 config SUPPORT_PASSING_ATAGS
@@ -2348,6 +2353,7 @@ source "board/vscom/baltos/Kconfig"
 source "board/phytium/durian/Kconfig"
 source "board/phytium/pomelo/Kconfig"
 source "board/xen/xenguest_arm64/Kconfig"
+source "board/virtual_platform/a55/Kconfig"
 
 source "arch/arm/Kconfig.debug"
 

@@ -1,0 +1,12 @@
+if TARGET_A55
+
+config SYS_BOARD
+	default "a55"
+
+config SYS_VENDOR
+	default "virtual_platform"
+
+config SYS_CONFIG_NAME
+	default "a55"
+
+endif
