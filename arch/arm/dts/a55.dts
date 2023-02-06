@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: BSD-2-Clause
+/*
+ * Copyright (C) 2023 Thomas coding.
+ */
+
+/dts-v1/;
+
+#include <configs/a55.h>
+
+
+/ {
+	compatible = "virtual_platform,a55";
+	model = "Virtual Platform A55 Board";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	chosen {
+		stdout-path = &uart0;
+	};
+
+	uart0: serial@40000000 {
+		compatible = "ns16550a";
+		reg = <0x0 0x40000000 0x0 0x10000>;
+		clock-frequency = <UART_CLK>;
+		reg-shift = <2>;
+		current-speed = <115200>;
+		u-boot,dm-pre-reloc;
+	};
+};
