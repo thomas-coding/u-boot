@@ -23,4 +23,18 @@
 //#define CONFIG_SYS_NS16550_SERIAL
 //#define CONFIG_PL01x_PORTS		{(void *)(0x40000000)}
 
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"bootdelay=5\0" \
+	"fdt_addr=0x36000000\0" \
+	"kernel_addr=0x35000000\0" \
+	"sdemmc_boot=no"
+
+#define CONFIG_BOOTCOMMAND \
+	"if test ${sdemmc_boot} = yes ; then " \
+		"echo Trying to boot Linux from sd/emmc card ...; " \
+	"else " \
+		"echo Trying to boot Linux from memory ...; " \
+		"booti ${kernel_addr} - ${fdt_addr}; " \
+	"fi; "
+
 #endif /* __A55_H */
