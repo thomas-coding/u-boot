@@ -23,15 +23,46 @@
 //#define CONFIG_SYS_NS16550_SERIAL
 //#define CONFIG_PL01x_PORTS		{(void *)(0x40000000)}
 
+#define A55_RAW_BLK_LOAD \
+	"rawblkload=" \
+		"echo Trying to rawblkload ...; " \
+		"mmc read ${kernel_addr} ${linux_start_sector} ${linux_size_sectors}; " \
+		"if test ${boot_fit} = yes ; then " \
+			"echo skip dtb load for fit; " \
+		"else " \
+			"mmc read ${fdt_addr} ${dtb_start_sector} ${dtb_size_sectors}; " \
+		"fi;\0"
+
+#define A55_MMC_LOAD \
+	"mmcload=" \
+		"if test ${fatfsboot} = yes ; then " \
+			"run fatfsload; " \
+		"else " \
+			"run rawblkload; " \
+		"fi;\0"
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"bootdelay=5\0" \
 	"fdt_addr=0x36000000\0" \
 	"kernel_addr=0x35000000\0" \
-	"sdemmc_boot=no"
+	"sdemmc_boot=yes\0" \
+	"fatfsboot=no\0" \
+	"boot_fit=no\0" \
+	"dtb_start_sector=0x8000\0"   /* DTB start sector in eMMC at 16MB */ \
+	"dtb_size_sectors=0x400\0"    /* DTB size: 512K */ \
+	"linux_start_sector=0x9000\0" /* Linux start sector in eMMC at 18MB */  \
+	"linux_size_sectors=0x20000\0" /* Linux size: 64MB */ \
+	A55_RAW_BLK_LOAD \
+	A55_MMC_LOAD
 
 #define CONFIG_BOOTCOMMAND \
 	"if test ${sdemmc_boot} = yes ; then " \
 		"echo Trying to boot Linux from sd/emmc card ...; " \
+		"if run mmcload ; then " \
+			"booti ${kernel_addr} - ${fdt_addr}; " \
+		"else " \
+			"echo mmc load failure; " \
+		"fi; " \
 	"else " \
 		"echo Trying to boot Linux from memory ...; " \
 		"booti ${kernel_addr} - ${fdt_addr}; " \
