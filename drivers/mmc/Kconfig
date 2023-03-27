@@ -494,6 +494,18 @@ config FIXED_SDHCI_ALIGNED_BUFFER
 	  This specifies the address of a fixed buffer located in SDRAM that
 	  will be used for all SDHCI transfers in the SPL.
 
+config MMC_SDHCI_A55
+	bool "Thomas QEMU virtual platform a55 SDHCI controller support"
+	depends on TARGET_A55
+	depends on DM_MMC
+	depends on MMC_SDHCI
+	help
+		This enables support for the a55 SDHCI controller.
+		If you have an a55 board with SD/eMMC card,
+		say Y here.
+
+		If unsure, say N.
+
 config MMC_SDHCI_ASPEED
 	bool "Aspeed SDHCI controller"
 	depends on ARCH_ASPEED

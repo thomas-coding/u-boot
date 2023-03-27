@@ -15,6 +15,14 @@ static struct mm_region a55_mem_map[] = {
 			 PTE_BLOCK_NON_SHARE |
 			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
 	}, {
+		/* SD card */
+		.virt = 0x70000000UL,
+		.phys = 0x70000000UL,
+		.size = 0x00010000,
+		.attrs = PTE_BLOCK_MEMTYPE(MT_DEVICE_NGNRNE) |
+			 PTE_BLOCK_NON_SHARE |
+			 PTE_BLOCK_PXN | PTE_BLOCK_UXN
+	}, {
 		/* RAM */
 		.virt = 0x31000000UL,
 		.phys = 0x31000000UL,
