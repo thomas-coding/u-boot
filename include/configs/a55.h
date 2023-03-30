@@ -23,6 +23,16 @@
 //#define CONFIG_SYS_NS16550_SERIAL
 //#define CONFIG_PL01x_PORTS		{(void *)(0x40000000)}
 
+#define A55_FATFS_LOAD \
+	"fatfsload=" \
+		"echo Trying to fatfsload ...; " \
+		"if test ${boot_fit} = yes ; then " \
+			"fatload mmc 0:1 ${kernel_addr} ${fit_name}; " \
+		"else " \
+			"fatload mmc 0:1 ${fdt_addr} ${fdt_name}; " \
+			"fatload mmc 0:1 ${kernel_addr} ${kernel_name}; " \
+		"fi;\0"
+
 #define A55_RAW_BLK_LOAD \
 	"rawblkload=" \
 		"echo Trying to rawblkload ...; " \
@@ -45,15 +55,18 @@
 	"bootdelay=5\0" \
 	"fdt_addr=0x36000000\0" \
 	"kernel_addr=0x35000000\0" \
+	"kernel_name=Image\0" \
+	"fdt_name=a55.dtb\0" \
 	"sdemmc_boot=yes\0" \
-	"fatfsboot=no\0" \
+	"fatfsboot=yes\0" \
 	"boot_fit=no\0" \
 	"dtb_start_sector=0x8000\0"   /* DTB start sector in eMMC at 16MB */ \
 	"dtb_size_sectors=0x400\0"    /* DTB size: 512K */ \
 	"linux_start_sector=0x9000\0" /* Linux start sector in eMMC at 18MB */  \
 	"linux_size_sectors=0x20000\0" /* Linux size: 64MB */ \
 	A55_RAW_BLK_LOAD \
-	A55_MMC_LOAD
+	A55_MMC_LOAD \
+	A55_FATFS_LOAD
 
 #define CONFIG_BOOTCOMMAND \
 	"if test ${sdemmc_boot} = yes ; then " \
