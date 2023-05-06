@@ -54,7 +54,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"bootdelay=5\0" \
 	"fdt_addr=0x36000000\0" \
-	"kernel_addr=0x35000000\0" \
+	"kernel_addr=0x34000000\0" \
 	"kernel_name=Image\0" \
 	"fdt_name=a55.dtb\0" \
 	"sdemmc_boot=yes\0" \
