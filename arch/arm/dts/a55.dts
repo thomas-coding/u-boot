@@ -46,6 +46,26 @@
 
 	virtio0: virtio@90000000 {
 		compatible = "virtio,mmio";
-		reg = <0x0 0x90000000 0x0 0x10000>;
+		reg = <0x0 0x90000000 0x0 0x1000>;
+	};
+
+	virtio1: virtio@90001000 {
+		compatible = "virtio,mmio";
+		reg = <0x0 0x90001000 0x0 0x1000>;
+	};
+
+	virtio2: virtio@90002000 {
+		compatible = "virtio,mmio";
+		reg = <0x0 0x90002000 0x0 0x1000>;
+	};
+
+	virtio3: virtio@90003000 {
+		compatible = "virtio,mmio";
+		reg = <0x0 0x90003000 0x0 0x1000>;
+	};
+
+	virtio4: virtio@90004000 {
+		compatible = "virtio,mmio";
+		reg = <0x0 0x90004000 0x0 0x1000>;
 	};
 };
