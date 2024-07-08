@@ -7,7 +7,7 @@
  *          Scott Wood <scottwood@freescale.com>
  */
 
-#include <common.h>
+#include <config.h>
 #include <command.h>
 #include <malloc.h>
 #include <nand.h>
@@ -668,7 +668,7 @@ static void fsl_elbc_ctrl_init(void)
 	elbc_ctrl->addr = NULL;
 }
 
-static int fsl_elbc_chip_init(int devnum, u8 *addr, ofnode flash_node)
+static int fsl_elbc_chip_init(int devnum, u8 *addr, struct udevice *dev)
 {
 	struct mtd_info *mtd;
 	struct nand_chip *nand;
@@ -716,7 +716,8 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr, ofnode flash_node)
 	elbc_ctrl->chips[priv->bank] = priv;
 
 	/* fill in nand_chip structure */
-	nand->flash_node = flash_node;
+	mtd->dev = dev;
+	nand->flash_node = dev ? dev_ofnode(dev) : ofnode_null();
 
 	/* set up function call table */
 	nand->read_byte = fsl_elbc_read_byte;
@@ -731,7 +732,6 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr, ofnode flash_node)
 	nand->bbt_md = &bbt_mirror_descr;
 
 	/* set up nand options */
-	nand->options = NAND_NO_SUBPAGE_WRITE;
 	nand->bbt_options = NAND_BBT_USE_FLASH;
 
 	nand->controller = &elbc_ctrl->controller;
@@ -744,7 +744,11 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr, ofnode flash_node)
 		return ret;
 
 	/* If nand_scan_ident() has not selected ecc.mode, do it now */
-	if (nand->ecc.mode == NAND_ECC_NONE) {
+	if (nand->ecc.mode == 0
+#if CONFIG_IS_ENABLED(OF_CONTROL)
+	    && !ofnode_read_string(nand->flash_node, "nand-ecc-mode")
+#endif
+	   ) {
 		/* If CS Base Register selects full hardware ECC then use it */
 		if ((br & BR_DECC) == BR_DECC_CHK_GEN) {
 			nand->ecc.mode = NAND_ECC_HW;
@@ -815,26 +819,26 @@ static int fsl_elbc_chip_init(int devnum, u8 *addr, ofnode flash_node)
 
 #ifndef CONFIG_NAND_FSL_ELBC_DT
 
-#ifndef CONFIG_SYS_NAND_BASE_LIST
-#define CONFIG_SYS_NAND_BASE_LIST { CONFIG_SYS_NAND_BASE }
+#ifndef CFG_SYS_NAND_BASE_LIST
+#define CFG_SYS_NAND_BASE_LIST { CFG_SYS_NAND_BASE }
 #endif
 
 static unsigned long base_address[CONFIG_SYS_MAX_NAND_DEVICE] =
-	CONFIG_SYS_NAND_BASE_LIST;
+	CFG_SYS_NAND_BASE_LIST;
 
 void board_nand_init(void)
 {
 	int i;
 
 	for (i = 0; i < CONFIG_SYS_MAX_NAND_DEVICE; i++)
-		fsl_elbc_chip_init(i, (u8 *)base_address[i], ofnode_null());
+		fsl_elbc_chip_init(i, (u8 *)base_address[i], NULL);
 }
 
 #else
 
 static int fsl_elbc_nand_probe(struct udevice *dev)
 {
-	return fsl_elbc_chip_init(0, (void *)dev_read_addr(dev), dev_ofnode(dev));
+	return fsl_elbc_chip_init(0, dev_read_addr_ptr(dev), dev);
 }
 
 static const struct udevice_id fsl_elbc_nand_dt_ids[] = {

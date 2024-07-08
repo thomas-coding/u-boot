@@ -5,7 +5,6 @@
 
 #define LOG_CATEGORY UCLASS_RAM
 
-#include <common.h>
 #include <clk.h>
 #include <log.h>
 #include <ram.h>
@@ -16,6 +15,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/iopoll.h>
+#include <linux/printk.h>
 #include "stm32mp1_ddr.h"
 #include "stm32mp1_ddr_regs.h"
 

@@ -11,7 +11,6 @@
  *          Adrian Hunter
  */
 
-#include <common.h>
 #include <env.h>
 #include <gzip.h>
 #include <log.h>
@@ -27,6 +26,11 @@
 #include <linux/err.h>
 #include <linux/lzo.h>
 
+#if IS_ENABLED(CONFIG_ZSTD)
+#include <linux/zstd.h>
+#include <abuf.h>
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 /* compress.c */
@@ -41,6 +45,25 @@ static int gzip_decompress(const unsigned char *in, size_t in_len,
 	return zunzip(out, *out_len, (unsigned char *)in,
 		      (unsigned long *)out_len, 0, 0);
 }
+
+#if IS_ENABLED(CONFIG_ZSTD)
+static int zstd_decompress_wrapper(const unsigned char *in, size_t in_len,
+				   unsigned char *out, size_t *out_len)
+{
+	struct abuf abuf_in, abuf_out;
+	int ret;
+
+	abuf_init_set(&abuf_in, (void *)in, in_len);
+	abuf_init_set(&abuf_out, (void *)out, *out_len);
+
+	ret = zstd_decompress(&abuf_in, &abuf_out);
+	if (ret < 0)
+		return ret;
+
+	*out_len = ret;
+	return 0;
+}
+#endif
 
 /* Fake description object for the "none" compressor */
 static struct ubifs_compressor none_compr = {
@@ -71,8 +94,21 @@ static struct ubifs_compressor zlib_compr = {
 	.decompress = gzip_decompress,
 };
 
+#if IS_ENABLED(CONFIG_ZSTD)
+static struct ubifs_compressor zstd_compr = {
+	.compr_type = UBIFS_COMPR_ZSTD,
+#ifndef __UBOOT__
+	.comp_mutex = &zstd_enc_mutex,
+	.decomp_mutex = &zstd_dec_mutex,
+#endif
+	.name = "zstd",
+	.capi_name = "zstd",
+	.decompress = zstd_decompress_wrapper,
+};
+#endif
+
 /* All UBIFS compressors */
-struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT];
+struct ubifs_compressor *ubifs_compressors[UBIFS_COMPR_TYPES_CNT] = {NULL};
 
 
 #ifdef __UBOOT__
@@ -166,8 +202,14 @@ int ubifs_decompress(const struct ubifs_info *c, const void *in_buf,
 
 	compr = ubifs_compressors[compr_type];
 
+	if (unlikely(!compr)) {
+		ubifs_err(c, "compression type %d is not compiled in", compr_type);
+		return -EINVAL;
+	}
+
 	if (unlikely(!compr->capi_name)) {
-		ubifs_err(c, "%s compression is not compiled in", compr->name);
+		ubifs_err(c, "%s compression is not compiled in",
+			  compr->name ? compr->name : "unknown");
 		return -EINVAL;
 	}
 
@@ -201,12 +243,6 @@ static int __init compr_init(struct ubifs_compressor *compr)
 {
 	ubifs_compressors[compr->compr_type] = compr;
 
-#ifdef CONFIG_NEEDS_MANUAL_RELOC
-	ubifs_compressors[compr->compr_type]->name += gd->reloc_off;
-	ubifs_compressors[compr->compr_type]->capi_name += gd->reloc_off;
-	ubifs_compressors[compr->compr_type]->decompress += gd->reloc_off;
-#endif
-
 	if (compr->capi_name) {
 		compr->cc = crypto_alloc_comp(compr->capi_name, 0, 0);
 		if (IS_ERR(compr->cc)) {
@@ -237,6 +273,12 @@ int __init ubifs_compressors_init(void)
 	err = compr_init(&zlib_compr);
 	if (err)
 		return err;
+
+#if IS_ENABLED(CONFIG_ZSTD)
+	err = compr_init(&zstd_compr);
+	if (err)
+		return err;
+#endif
 
 	err = compr_init(&none_compr);
 	if (err)
@@ -788,6 +830,8 @@ static int do_readpage(struct ubifs_info *c, struct inode *inode,
 
 				if (last_block_size)
 					dlen = last_block_size;
+				else if (ret)
+					dlen = UBIFS_BLOCK_SIZE;
 				else
 					dlen = le32_to_cpu(dn->size);
 
@@ -923,12 +967,12 @@ void ubifs_close(void)
 }
 
 /* Compat wrappers for common/cmd_ubifs.c */
-int ubifs_load(char *filename, u32 addr, u32 size)
+int ubifs_load(char *filename, unsigned long addr, u32 size)
 {
 	loff_t actread;
 	int err;
 
-	printf("Loading file '%s' to addr 0x%08x...\n", filename, addr);
+	printf("Loading file '%s' to addr 0x%08lx...\n", filename, addr);
 
 	err = ubifs_read(filename, (void *)(uintptr_t)addr, 0, size, &actread);
 	if (err == 0) {

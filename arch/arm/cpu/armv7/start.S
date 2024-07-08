@@ -17,6 +17,7 @@
 #include <asm/system.h>
 #include <linux/linkage.h>
 #include <asm/armv7.h>
+#include <system-constants.h>
 
 /*************************************************************************
  *
@@ -133,8 +134,8 @@ ENTRY(c_runtime_cpu_setup)
  */
 #if !CONFIG_IS_ENABLED(SYS_ICACHE_OFF)
 	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
-	mcr     p15, 0, r0, c7, c10, 4	@ DSB
-	mcr     p15, 0, r0, c7, c5, 4	@ ISB
+	dsb
+	isb
 #endif
 
 	bx	lr
@@ -150,16 +151,43 @@ ENDPROC(c_runtime_cpu_setup)
  * Don't save anything to stack even if compiled with -O0
  *
  *************************************************************************/
-ENTRY(save_boot_params)
+WEAK(save_boot_params)
+#if (IS_ENABLED(CONFIG_BLOBLIST))
+	/* Calculate the PC-relative address of saved_args */
+	adr	r12, saved_args_offset
+	ldr	r13, saved_args_offset
+	add	r12, r12, r13
+
+	/*
+	 * Intentionally swapping r0 with r2 in order to simplify the C
+	 * function we use later.
+	 */
+	str	r2, [r12]
+	str	r1, [r12, #4]
+	str	r0, [r12, #8]
+	str	r3, [r12, #12]
+#endif
 	b	save_boot_params_ret		@ back to my caller
 ENDPROC(save_boot_params)
-	.weak	save_boot_params
+
+#if (IS_ENABLED(CONFIG_BLOBLIST))
+saved_args_offset:
+	.long	saved_args - .	/* offset from current code to save_args */
+
+	.section .data
+	.align 2
+	.global saved_args
+saved_args:
+	.rept 4
+	.word 0
+	.endr
+END(saved_args)
+#endif
 
 #ifdef CONFIG_ARMV7_LPAE
-ENTRY(switch_to_hypervisor)
+WEAK(switch_to_hypervisor)
 	b	switch_to_hypervisor_ret
 ENDPROC(switch_to_hypervisor)
-	.weak	switch_to_hypervisor
 #endif
 
 /*************************************************************************
@@ -189,8 +217,8 @@ ENTRY(cpu_init_cp15)
 	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
 	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
 	mcr	p15, 0, r0, c7, c5, 6	@ invalidate BP array
-	mcr     p15, 0, r0, c7, c10, 4	@ DSB
-	mcr     p15, 0, r0, c7, c5, 4	@ ISB
+	dsb
+	isb
 
 	/*
 	 * disable MMU stuff and caches
@@ -254,7 +282,7 @@ ENTRY(cpu_init_cp15)
 #if defined(CONFIG_SPL_BUILD) && defined(CONFIG_SPL_STACK)
 	ldr	r0, =(CONFIG_SPL_STACK)
 #else
-	ldr	r0, =(CONFIG_SYS_INIT_SP_ADDR)
+	ldr	r0, =(SYS_INIT_SP_ADDR)
 #endif
 	bic	r0, r0, #7	/* 8-byte alignment for ABI compliance */
 	mov	sp, r0

@@ -34,6 +34,12 @@
 #define pr_warn(fmt, args...)	fprintf(stderr, pr_fmt(fmt), "warning", ##args)
 #define pr_info(fmt, args...)	fprintf(stderr, pr_fmt(fmt), "info", ##args)
 
+#if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x3050000fL
+#define RSA_get0_n(key) (key)->n
+#define RSA_get0_e(key) (key)->e
+#define RSA_get0_d(key) (key)->d
+#endif
+
 struct __packed toc0_key_item {
 	__le32  vendor_id;
 	__le32  key0_n_len;
@@ -751,7 +757,7 @@ static const char *toc0_item_name(uint32_t name)
 	return "(unknown)";
 }
 
-static void toc0_print_header(const void *buf)
+static void toc0_print_header(const void *buf, struct image_tool_params *params)
 {
 	const struct toc0_main_info *main_info = buf;
 	const struct toc0_item_info *item_info = (void *)(main_info + 1);

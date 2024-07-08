@@ -14,15 +14,6 @@
 #include <asm/arch/imx-regs.h>
 #include <linux/sizes.h>
 
-/* NAND support */
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-
-#define CONFIG_IPADDR		192.168.10.2
-#define CONFIG_NETMASK		255.255.255.0
-#define CONFIG_SERVERIP		192.168.10.1
-
-#define CONFIG_FDTADDR			0x84000000
-
 #define MEM_LAYOUT_ENV_SETTINGS \
 	"bootm_size=0x10000000\0" \
 	"fdt_addr_r=0x82000000\0" \
@@ -56,7 +47,7 @@
 
 #define DFU_ALT_NAND_INFO "vf-bcb part 0,1;u-boot part 0,2;ubi part 0,4"
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	BOOTENV \
 	MEM_LAYOUT_ENV_SETTINGS \
 	UBI_BOOTCMD \
@@ -68,7 +59,6 @@
 	"fdt_board=eval-v3\0" \
 	"fdt_fixup=;\0" \
 	"kernel_image=zImage\0" \
-	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
 	"setsdupdate=mmc rescan && set interface mmc && " \
 		"fatload ${interface} 0:1 ${loadaddr} flash_blk.img && " \
 		"source ${loadaddr}\0" \
@@ -82,30 +72,16 @@
 	"video-mode=dcufb:640x480-16@60,monitor=lcd\0"
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_CBSIZE		1024	/* Console I/O Buffer Size */
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
 
 /* Physical memory map */
 #define PHYS_SDRAM			(0x80000000)
 #define PHYS_SDRAM_SIZE			(256 * SZ_1M)
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-/* Environment organization */
-#ifdef CONFIG_ENV_IS_IN_NAND
-#define CONFIG_ENV_RANGE		(4 * 64 * 2048)
-#endif
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 /* USB Host Support */
-#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
-#define CONFIG_EHCI_HCD_INIT_AFTER_RESET
 
 /* USB DFU */
 

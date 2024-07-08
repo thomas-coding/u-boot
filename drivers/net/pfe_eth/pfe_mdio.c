@@ -3,7 +3,7 @@
  * Copyright 2015-2016 Freescale Semiconductor, Inc.
  * Copyright 2017 NXP
  */
-#include <common.h>
+#include <config.h>
 #include <dm.h>
 #include <log.h>
 #include <malloc.h>
@@ -213,7 +213,7 @@ int pfe_phy_configure(struct pfe_eth_dev *priv, int dev_id, int phy_id)
 	struct phy_device *phydev = NULL;
 	struct udevice *dev = priv->dev;
 	struct gemac_s *gem = priv->gem;
-	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
+	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CFG_SYS_FSL_SCFG_ADDR;
 
 	if (!gem->bus)
 		return -1;

@@ -7,7 +7,6 @@
  */
 
 #include <clk.h>
-#include <common.h>
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <log.h>
@@ -94,6 +93,7 @@ struct zynq_qspi_priv {
 	u8 mode;
 	u8 fifo_depth;
 	u32 freq;		/* required frequency */
+	u32 max_hz;
 	const void *tx_buf;
 	void *rx_buf;
 	unsigned len;
@@ -172,6 +172,16 @@ static void zynq_qspi_init_hw(struct zynq_qspi_priv *priv)
 
 	/* Enable SPI */
 	writel(ZYNQ_QSPI_ENR_SPI_EN_MASK, &regs->enr);
+}
+
+static int zynq_qspi_child_pre_probe(struct udevice *bus)
+{
+	struct spi_slave *slave = dev_get_parent_priv(bus);
+	struct zynq_qspi_priv *priv = dev_get_priv(bus->parent);
+
+	priv->max_hz = slave->max_hz;
+
+	return 0;
 }
 
 static int zynq_qspi_probe(struct udevice *bus)
@@ -611,15 +621,12 @@ static int zynq_qspi_set_speed(struct udevice *bus, uint speed)
 	uint32_t confr;
 	u8 baud_rate_val = 0;
 
-	if (speed > plat->frequency)
-		speed = plat->frequency;
+	if (!speed || speed > priv->max_hz)
+		speed = priv->max_hz;
 
 	/* Set the clock frequency */
 	confr = readl(&regs->cr);
-	if (speed == 0) {
-		/* Set baudrate x8, if the freq is 0 */
-		baud_rate_val = 0x2;
-	} else if (plat->speed_hz != speed) {
+	if (plat->speed_hz != speed) {
 		while ((baud_rate_val < ZYNQ_QSPI_CR_BAUD_MAX) &&
 		       ((plat->frequency /
 		       (2 << baud_rate_val)) > speed))
@@ -719,8 +726,50 @@ static int zynq_qspi_exec_op(struct spi_slave *slave,
 	return 0;
 }
 
+static int zynq_qspi_check_buswidth(struct spi_slave *slave, u8 width)
+{
+	u32 mode = slave->mode;
+
+	switch (width) {
+	case 1:
+		return 0;
+	case 2:
+		if (mode & SPI_RX_DUAL)
+			return 0;
+		break;
+	case 4:
+		if (mode & SPI_RX_QUAD)
+			return 0;
+		break;
+	}
+
+	return -EOPNOTSUPP;
+}
+
+static bool zynq_qspi_mem_exec_op(struct spi_slave *slave,
+				  const struct spi_mem_op *op)
+{
+	if (zynq_qspi_check_buswidth(slave, op->cmd.buswidth))
+		return false;
+
+	if (op->addr.nbytes &&
+	    zynq_qspi_check_buswidth(slave, op->addr.buswidth))
+		return false;
+
+	if (op->dummy.nbytes &&
+	    zynq_qspi_check_buswidth(slave, op->dummy.buswidth))
+		return false;
+
+	if (op->data.dir != SPI_MEM_NO_DATA &&
+	    zynq_qspi_check_buswidth(slave, op->data.buswidth))
+		return false;
+
+	return true;
+}
+
 static const struct spi_controller_mem_ops zynq_qspi_mem_ops = {
 	.exec_op = zynq_qspi_exec_op,
+	.supports_op = zynq_qspi_mem_exec_op,
 };
 
 static const struct dm_spi_ops zynq_qspi_ops = {
@@ -746,4 +795,5 @@ U_BOOT_DRIVER(zynq_qspi) = {
 	.plat_auto	= sizeof(struct zynq_qspi_plat),
 	.priv_auto	= sizeof(struct zynq_qspi_priv),
 	.probe  = zynq_qspi_probe,
+	.child_pre_probe = zynq_qspi_child_pre_probe,
 };

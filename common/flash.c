@@ -6,14 +6,12 @@
 
 /* #define DEBUG */
 
-#include <common.h>
 #include <flash.h>
 #include <log.h>
 #include <uuid.h>
+#include <linux/string.h>
 
 #include <mtd/cfi_flash.h>
-
-extern flash_info_t  flash_info[]; /* info for FLASH chips */
 
 /*-----------------------------------------------------------------------
  * Functions

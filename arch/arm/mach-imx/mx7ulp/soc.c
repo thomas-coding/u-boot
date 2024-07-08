@@ -4,7 +4,7 @@
  * Copyright 2021 NXP
  */
 
-#include <common.h>
+#include <config.h>
 #include <cpu_func.h>
 #include <init.h>
 #include <log.h>
@@ -93,7 +93,7 @@ int arch_misc_init(void)
 
 		ret = uclass_get_device_by_driver(UCLASS_MISC, DM_DRIVER_GET(caam_jr), &dev);
 		if (ret)
-			printf("Failed to initialize %s: %d\n", dev->name, ret);
+			printf("Failed to initialize caam_jr: %d\n", ret);
 	}
 
 	return 0;

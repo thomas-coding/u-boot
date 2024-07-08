@@ -6,7 +6,6 @@
  * Author: Rick Chen (rick@andestech.com)
  */
 
-#include <common.h>
 #include <clk.h>
 #include <log.h>
 #include <malloc.h>
@@ -362,7 +361,6 @@ static int atcspi200_spi_get_clk(struct udevice *bus)
 		return -EINVAL;
 
 	ns->clock = clk_rate;
-	clk_free(&clk);
 
 	return 0;
 }

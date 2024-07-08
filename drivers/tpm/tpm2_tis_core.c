@@ -5,8 +5,8 @@
  * Based on the Linux TIS core interface and U-Boot original SPI TPM driver
  */
 
-#include <common.h>
 #include <dm.h>
+#include <time.h>
 #include <tpm-v2.h>
 #include <linux/delay.h>
 #include <linux/unaligned/be_byteshift.h>
@@ -224,9 +224,6 @@ int tpm_tis_send(struct udevice *dev, const u8 *buf, size_t len)
 	u8 status;
 	int ret;
 
-	if (!chip)
-		return -ENODEV;
-
 	ret = tpm_tis_request_locality(dev, 0);
 	if (ret < 0)
 		return -EBUSY;
@@ -433,14 +430,15 @@ int tpm_tis_init(struct udevice *dev)
 		log_err("Driver bug. No bus ops defined\n");
 		return -1;
 	}
-	ret = tpm_tis_request_locality(dev, 0);
-	if (ret)
-		return ret;
 
 	chip->timeout_a = TIS_SHORT_TIMEOUT_MS;
 	chip->timeout_b = TIS_LONG_TIMEOUT_MS;
 	chip->timeout_c = TIS_SHORT_TIMEOUT_MS;
 	chip->timeout_d = TIS_SHORT_TIMEOUT_MS;
+
+	ret = tpm_tis_request_locality(dev, 0);
+	if (ret)
+		return ret;
 
 	/* Disable interrupts */
 	phy_ops->read32(dev, TPM_INT_ENABLE(chip->locality), &tmp);

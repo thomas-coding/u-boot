@@ -22,7 +22,6 @@
  * https://github.com/riscv/riscv-linux/commit/999529edf517ed75b56659d456d221b2ee56bb60
  */
 
-#include <common.h>
 #include <clk-uclass.h>
 #include <clk.h>
 #include <dm.h>
@@ -685,14 +684,14 @@ static int sifive_prci_probe(struct udevice *dev)
 				 * case the design uses hfpclk to drive
 				 * Chiplink
 				 */
-				pc = &data->clks[PRCI_CLK_HFPCLKPLL];
+				pc = &data->clks[FU740_PRCI_CLK_HFPCLKPLL];
 				parent_rate = sifive_prci_parent_rate(pc, data);
 				sifive_prci_wrpll_set_rate(pc, 260000000,
 							   parent_rate);
 				pc->ops->enable_clk(pc, 1);
 			} else if (prci_pll_reg & PRCI_PRCIPLL_CLTXPLL) {
 				/* CLTX pll init */
-				pc = &data->clks[PRCI_CLK_CLTXPLL];
+				pc = &data->clks[FU740_PRCI_CLK_CLTXPLL];
 				parent_rate = sifive_prci_parent_rate(pc, data);
 				sifive_prci_wrpll_set_rate(pc, 260000000,
 							   parent_rate);

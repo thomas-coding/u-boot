@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2019-2020 Linaro Limited
+ * Copyright (C) 2019-2022 Linaro Limited
  */
 
 #define LOG_CATEGORY UCLASS_CLK
 
-#include <common.h>
 #include <clk-uclass.h>
 #include <dm.h>
 #include <scmi_agent.h>
@@ -140,6 +139,10 @@ static int scmi_clk_probe(struct udevice *dev)
 	size_t num_clocks, i;
 	int ret;
 
+	ret = devm_scmi_of_get_channel(dev);
+	if (ret)
+		return ret;
+
 	if (!CONFIG_IS_ENABLED(CLK_CCF))
 		return 0;
 
@@ -186,5 +189,5 @@ U_BOOT_DRIVER(scmi_clock) = {
 	.name = "scmi_clk",
 	.id = UCLASS_CLK,
 	.ops = &scmi_clk_ops,
-	.probe = &scmi_clk_probe,
+	.probe = scmi_clk_probe,
 };

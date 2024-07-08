@@ -15,7 +15,7 @@
  * Please see doc/driver-model/i2c-howto.rst for instructions.
  */
 
-#include <common.h>
+#include <config.h>
 #if defined(CONFIG_AT91FAMILY)
 #include <asm/io.h>
 #include <asm/arch/hardware.h>
@@ -86,13 +86,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef	I2C_SOFT_DECLARATIONS
 #  define I2C_SOFT_DECLARATIONS
-#endif
-
-#if !defined(CONFIG_SYS_I2C_SOFT_SPEED)
-#define CONFIG_SYS_I2C_SOFT_SPEED CONFIG_SYS_I2C_SPEED
-#endif
-#if !defined(CONFIG_SYS_I2C_SOFT_SLAVE)
-#define CONFIG_SYS_I2C_SOFT_SLAVE CONFIG_SYS_I2C_SLAVE
 #endif
 
 /*-----------------------------------------------------------------------

@@ -11,13 +11,9 @@
 
 /* Link Definitions */
 #ifdef CONFIG_TARGET_VEXPRESS64_JUNO
-#define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SYS_SDRAM_BASE + 0x7fff0)
 #else
 /* ATF loads u-boot here for BASE_FVP model */
-#define CONFIG_SYS_INIT_SP_ADDR         (CONFIG_SYS_SDRAM_BASE + 0x03f00000)
 #endif
-
-#define CONFIG_SYS_BOOTM_LEN (64 << 20)      /* Increase max gunzip size */
 
 /* CS register bases for the original memory map. */
 #ifdef CONFIG_TARGET_VEXPRESS64_BASER_FVP
@@ -88,17 +84,11 @@
 #endif
 #endif /* !CONFIG_GICV3 */
 
-#if defined(CONFIG_TARGET_VEXPRESS64_BASE_FVP) && !defined(CONFIG_DM_ETH)
-/* The Vexpress64 BASE_FVP simulator uses SMSC91C111 */
-#define CONFIG_SMC91111			1
-#define CONFIG_SMC91111_BASE		(V2M_PA_BASE + 0x01A000000)
-#endif
-
 /* PL011 Serial Configuration */
 #ifdef CONFIG_TARGET_VEXPRESS64_JUNO
-#define CONFIG_PL011_CLOCK		7372800
+#define CFG_PL011_CLOCK		7372800
 #else
-#define CONFIG_PL011_CLOCK		24000000
+#define CFG_PL011_CLOCK		24000000
 #endif
 
 /* Physical Memory Map */
@@ -106,7 +96,7 @@
 /* Top 16MB reserved for secure world use */
 #define DRAM_SEC_SIZE		0x01000000
 #define PHYS_SDRAM_1_SIZE	0x80000000 - DRAM_SEC_SIZE
-#define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM_1
+#define CFG_SYS_SDRAM_BASE	PHYS_SDRAM_1
 
 #ifdef CONFIG_TARGET_VEXPRESS64_JUNO
 #define PHYS_SDRAM_2			(0x880000000)
@@ -158,6 +148,12 @@
 #define FUNC_VIRTIO(func)
 #endif
 
+#ifdef CONFIG_CMD_MMC
+#define FUNC_MMC(func)	func(MMC, mmc, 0)
+#else
+#define FUNC_MMC(func)
+#endif
+
 /*
  * Boot by loading an Android image, or kernel, initrd and FDT through
  * semihosting into DRAM.
@@ -191,6 +187,7 @@
 	func(USB, usb, 0)		\
 	func(SATA, sata, 0)		\
 	func(SATA, sata, 1)		\
+	FUNC_VIRTIO(func)		\
 	func(PXE, pxe, na)		\
 	func(DHCP, dhcp, na)		\
 	func(AFS, afs, na)
@@ -214,6 +211,7 @@
 	func(SMH, smh, na)		\
 	func(MEM, mem, na)		\
 	FUNC_VIRTIO(func)		\
+	FUNC_MMC(func)			\
 	func(PXE, pxe, na)		\
 	func(DHCP, dhcp, na)
 
@@ -254,7 +252,7 @@
 #include <config_distro_bootcmd.h>
 
 /* Default load addresses and names for the different payloads. */
-#define CONFIG_EXTRA_ENV_SETTINGS	\
+#define CFG_EXTRA_ENV_SETTINGS	\
 		"kernel_addr_r=" __stringify(VEXPRESS_KERNEL_ADDR) "\0"	       \
 		"ramdisk_addr_r=" __stringify(VEXPRESS_RAMDISK_ADDR) "\0"      \
 		"pxefile_addr_r=" __stringify(VEXPRESS_PXEFILE_ADDR) "\0"      \
@@ -263,31 +261,10 @@
 		EXTRA_ENV_NAMES						       \
 		BOOTENV
 
-/* Monitor Command Prompt */
-#define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
-#define CONFIG_SYS_MAXARGS		64	/* max command args */
-
 #ifdef CONFIG_TARGET_VEXPRESS64_JUNO
-#define CONFIG_SYS_FLASH_BASE		0x08000000
-/* 255 x 256KiB sectors + 4 x 64KiB sectors at the end = 259 */
-#define CONFIG_SYS_MAX_FLASH_SECT	259
-/* Store environment at top of flash in the same location as blank.img */
-/* in the Juno firmware. */
+#define CFG_SYS_FLASH_BASE		0x08000000
 #else
-#define CONFIG_SYS_FLASH_BASE		(V2M_PA_BASE + 0x0C000000)
-/* 256 x 256KiB sectors */
-#define CONFIG_SYS_MAX_FLASH_SECT	256
-/* Store environment at top of flash */
+#define CFG_SYS_FLASH_BASE		(V2M_PA_BASE + 0x0C000000)
 #endif
-
-#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_32BIT
-
-#ifdef CONFIG_USB_EHCI_HCD
-#define CONFIG_USB_OHCI_NEW
-#define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS 1
-#endif
-
-#define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */
-#define FLASH_MAX_SECTOR_SIZE		0x00040000
 
 #endif /* __VEXPRESS_AEMV8_H */

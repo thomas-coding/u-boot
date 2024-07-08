@@ -6,8 +6,10 @@
 #ifndef __PINCTRL_H
 #define __PINCTRL_H
 
+#include <linux/errno.h>
+
 #define PINNAME_SIZE	10
-#define PINMUX_SIZE	80
+#define PINMUX_SIZE	90
 
 /**
  * struct pinconf_param - pin config parameters
@@ -491,6 +493,8 @@ enum pin_config_param {
  * Return: 0 on success, or negative error code on failure
  */
 int pinctrl_generic_set_state(struct udevice *pctldev, struct udevice *config);
+int pinctrl_generic_set_state_prefix(struct udevice *pctldev, struct udevice *config,
+				     const char *prefix);
 #else
 static inline int pinctrl_generic_set_state(struct udevice *pctldev,
 					    struct udevice *config)
@@ -609,10 +613,11 @@ int pinctrl_get_pin_name(struct udevice *dev, int selector, char *buf,
  * pinctrl_gpio_request() - Request a single pin to be used as GPIO
  * @dev:	GPIO peripheral device
  * @offset:	GPIO pin offset from the GPIO controller
+ * @label:	GPIO label
  *
  * Return: 0 on success, or negative error code on failure
  */
-int pinctrl_gpio_request(struct udevice *dev, unsigned offset);
+int pinctrl_gpio_request(struct udevice *dev, unsigned offset, const char *label);
 
 /**
  * pinctrl_gpio_free() - Free a single pin used as GPIO

@@ -6,7 +6,6 @@
  * David Mueller, ELSOFT AG, d.mueller@elsoft.ch
  */
 
-#include <common.h>
 #include <dm.h>
 #include <i2c.h>
 #include <log.h>
@@ -147,7 +146,7 @@ static int hsi2c_get_clk_details(struct s3c24x0_i2c_bus *i2c_bus)
 	unsigned int i = 0, utemp0 = 0, utemp1 = 0;
 	unsigned int t_ftl_cycle;
 
-#if (defined CONFIG_EXYNOS4 || defined CONFIG_EXYNOS5)
+#if defined(CONFIG_ARCH_EXYNOS4) || defined(CONFIG_ARCH_EXYNOS5)
 	clkin = get_i2c_clk();
 #else
 	clkin = get_PCLK();

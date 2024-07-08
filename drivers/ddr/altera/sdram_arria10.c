@@ -3,7 +3,6 @@
  * Copyright (C) 2017 Intel Corporation <www.intel.com>
  */
 
-#include <common.h>
 #include <cpu_func.h>
 #include <errno.h>
 #include <fdtdec.h>
@@ -671,7 +670,7 @@ static int of_sdram_firewall_setup(const void *blob)
 
 int ddr_calibration_sequence(void)
 {
-	WATCHDOG_RESET();
+	schedule();
 
 	/* Check to see if SDRAM cal was success */
 	if (sdram_startup()) {
@@ -681,7 +680,7 @@ int ddr_calibration_sequence(void)
 
 	puts("DDRCAL: Success\n");
 
-	WATCHDOG_RESET();
+	schedule();
 
 	/* initialize the MMR register */
 	sdram_mmr_init();

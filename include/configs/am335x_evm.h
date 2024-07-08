@@ -1,7 +1,7 @@
 /*
  * am335x_evm.h
  *
- * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (C) 2011 Texas Instruments Incorporated - https://www.ti.com/
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,22 +19,18 @@
 #include <configs/ti_am335x_common.h>
 #include <linux/sizes.h>
 
-#define CONFIG_SYS_BOOTM_LEN		SZ_16M
-
 /* Clock Defines */
 #define V_OSCK				24000000  /* Clock output from T2 */
 #define V_SCLK				(V_OSCK)
 
 #ifdef CONFIG_MTD_RAW_NAND
 #define NANDARGS \
-	"mtdids=" CONFIG_MTDIDS_DEFAULT "\0" \
-	"mtdparts=" CONFIG_MTDPARTS_DEFAULT "\0" \
 	"nandargs=setenv bootargs console=${console} " \
 		"${optargs} " \
 		"root=${nandroot} " \
 		"rootfstype=${nandrootfstype}\0" \
 	"nandroot=ubi0:rootfs rw ubi.mtd=NAND.file-system,2048\0" \
-	"nandrootfstype=ubifs rootwait=1\0" \
+	"nandrootfstype=ubifs rootwait\0" \
 	"nandboot=echo Booting from nand ...; " \
 		"run nandargs; " \
 		"nand read ${fdtaddr} NAND.u-boot-spl-os; " \
@@ -51,7 +47,7 @@
 #define BOOTENV_DEV_NAME_NAND(devtypeu, devtypel, instance) \
 	#devtypel #instance " "
 
-#if CONFIG_IS_ENABLED(CMD_USB)
+#if IS_ENABLED(CONFIG_CMD_USB)
 # define BOOT_TARGET_USB(func) func(USB, usb, 0)
 #else
 # define BOOT_TARGET_USB(func)
@@ -80,9 +76,9 @@
 #include <config_distro_bootcmd.h>
 
 #ifndef CONFIG_SPL_BUILD
-#include <environment/ti/dfu.h>
+#include <env/ti/dfu.h>
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	DEFAULT_LINUX_BOOT_ENV \
 	"fdtfile=undefined\0" \
 	"finduuid=part uuid mmc 0:2 uuid\0" \
@@ -162,28 +158,17 @@
 #endif
 
 /* NS16550 Configuration */
-#define CONFIG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
-#define CONFIG_SYS_NS16550_COM2		0x48022000	/* UART1 */
-#define CONFIG_SYS_NS16550_COM3		0x48024000	/* UART2 */
-#define CONFIG_SYS_NS16550_COM4		0x481a6000	/* UART3 */
-#define CONFIG_SYS_NS16550_COM5		0x481a8000	/* UART4 */
-#define CONFIG_SYS_NS16550_COM6		0x481aa000	/* UART5 */
-
-/* PMIC support */
-#define CONFIG_POWER_TPS65910
-
-/* SPL */
-#ifndef CONFIG_NOR_BOOT
-/* Bootcount using the RTC block */
-#define CONFIG_SYS_BOOTCOUNT_BE
-
-/* USB gadget RNDIS */
-#endif
+#define CFG_SYS_NS16550_COM1		0x44e09000	/* Base EVM has UART0 */
+#define CFG_SYS_NS16550_COM2		0x48022000	/* UART1 */
+#define CFG_SYS_NS16550_COM3		0x48024000	/* UART2 */
+#define CFG_SYS_NS16550_COM4		0x481a6000	/* UART3 */
+#define CFG_SYS_NS16550_COM5		0x481a8000	/* UART4 */
+#define CFG_SYS_NS16550_COM6		0x481aa000	/* UART5 */
 
 #ifdef CONFIG_MTD_RAW_NAND
 /* NAND: device related configs */
 /* NAND: driver related configs */
-#define CONFIG_SYS_NAND_ECCPOS		{ 2, 3, 4, 5, 6, 7, 8, 9, \
+#define CFG_SYS_NAND_ECCPOS		{ 2, 3, 4, 5, 6, 7, 8, 9, \
 					 10, 11, 12, 13, 14, 15, 16, 17, \
 					 18, 19, 20, 21, 22, 23, 24, 25, \
 					 26, 27, 28, 29, 30, 31, 32, 33, \
@@ -191,12 +176,8 @@
 					 42, 43, 44, 45, 46, 47, 48, 49, \
 					 50, 51, 52, 53, 54, 55, 56, 57, }
 
-#define CONFIG_SYS_NAND_ECCSIZE		512
-#define CONFIG_SYS_NAND_ECCBYTES	14
-/* NAND: SPL related configs */
-#ifdef CONFIG_SPL_OS_BOOT
-#define CONFIG_SYS_NAND_SPL_KERNEL_OFFS	0x00200000 /* kernel offset */
-#endif
+#define CFG_SYS_NAND_ECCSIZE		512
+#define CFG_SYS_NAND_ECCBYTES	14
 #endif /* !CONFIG_MTD_RAW_NAND */
 
 /* USB Device Firmware Update support */
@@ -207,24 +188,6 @@
 	DFU_ALT_INFO_RAM \
 	DFU_ALT_INFO_NAND
 #endif
-
-/*
- * Default to using SPI for environment, etc.
- * 0x000000 - 0x020000 : SPL (128KiB)
- * 0x020000 - 0x0A0000 : U-Boot (512KiB)
- * 0x0A0000 - 0x0BFFFF : First copy of U-Boot Environment (128KiB)
- * 0x0C0000 - 0x0DFFFF : Second copy of U-Boot Environment (128KiB)
- * 0x0E0000 - 0x442000 : Linux Kernel
- * 0x442000 - 0x800000 : Userland
- */
-#if defined(CONFIG_SPI_BOOT)
-/* SPL related */
-#elif defined(CONFIG_EMMC_BOOT)
-#define CONFIG_SYS_MMC_MAX_DEVICE	2
-#endif
-
-/* Network. */
-/* Enable Atheros phy driver */
 
 /*
  * NOR Size = 16 MiB
@@ -239,10 +202,8 @@
  * 0x4C0000 - 0xFFFFFF : Userland (11 MiB + 256 KiB)
  */
 #if defined(CONFIG_NOR)
-#define CONFIG_SYS_MAX_FLASH_SECT	128
-#define CONFIG_SYS_FLASH_BASE		(0x08000000)
-#define CONFIG_SYS_FLASH_CFI_WIDTH	FLASH_CFI_16BIT
-#define CONFIG_SYS_FLASH_SIZE		0x01000000
+#define CFG_SYS_FLASH_BASE		(0x08000000)
+#define CFG_SYS_FLASH_SIZE		0x01000000
 #endif  /* NOR support */
 
 #endif	/* ! __CONFIG_AM335X_EVM_H */

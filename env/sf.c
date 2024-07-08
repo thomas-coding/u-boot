@@ -8,11 +8,9 @@
  *
  * (C) Copyright 2008 Atmel Corporation
  */
-#include <common.h>
 #include <dm.h>
 #include <env.h>
 #include <env_internal.h>
-#include <flash.h>
 #include <malloc.h>
 #include <spi.h>
 #include <spi_flash.h>
@@ -48,7 +46,6 @@ static int setup_flash_device(struct spi_flash **env_flash)
 
 	/* speed and mode will be read from DT */
 	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
-				     CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE,
 				     &new);
 	if (ret) {
 		env_set_default("spi_flash_probe_bus_cs() failed", 0);
@@ -212,8 +209,10 @@ static int env_sf_save(void)
 		saved_size = sect_size - CONFIG_ENV_SIZE;
 		saved_offset = CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE;
 		saved_buffer = malloc(saved_size);
-		if (!saved_buffer)
+		if (!saved_buffer) {
+			ret = -ENOMEM;
 			goto done;
+		}
 
 		ret = spi_flash_read(env_flash, saved_offset,
 			saved_size, saved_buffer);

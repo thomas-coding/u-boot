@@ -10,6 +10,13 @@ config CLK_SUNXI
 
 if CLK_SUNXI
 
+config CLK_SUNIV_F1C100S
+	bool "Clock driver for Allwinner F1C100s"
+	default MACH_SUNIV
+	help
+	  This enables common clock driver support for platforms based
+	  on Allwinner F1C100s SoC.
+
 config CLK_SUN4I_A10
 	bool "Clock driver for Allwinner A10/A20"
 	default MACH_SUN4I || MACH_SUN7I
@@ -79,6 +86,13 @@ config CLK_SUN8I_H3
 	help
 	  This enables common clock driver support for platforms based
 	  on Allwinner H3/H5 SoC.
+
+config CLK_SUN20I_D1
+	bool "Clock driver for Allwinner D1"
+	default MACH_SUN8I_R528
+	help
+	  This enables common clock driver support for platforms based
+	  on Allwinner D1 SoC.
 
 config CLK_SUN50I_H6
 	bool "Clock driver for Allwinner H6"

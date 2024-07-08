@@ -9,7 +9,6 @@
  * Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
  */
 
-#include <common.h>
 #include <clk-uclass.h>
 #include <dm.h>
 #include <generic-phy.h>
@@ -168,7 +167,7 @@ enum {
 };
 
 /* Timeout values */
-#define TIMEOUT_US			1000
+#define TIMEOUT_US			10000
 
 #define IOU_SLCR_GEM_CLK_CTRL		0x308
 #define GEM_CTRL_GEM_SGMII_MODE		BIT(2)

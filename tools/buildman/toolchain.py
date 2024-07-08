@@ -11,9 +11,9 @@ import tempfile
 import urllib.request, urllib.error, urllib.parse
 
 from buildman import bsettings
-from patman import command
-from patman import terminal
-from patman import tools
+from u_boot_pylib import command
+from u_boot_pylib import terminal
+from u_boot_pylib import tools
 
 (PRIORITY_FULL_PREFIX, PRIORITY_PREFIX_GCC, PRIORITY_PREFIX_GCC_PATH,
     PRIORITY_CALC) = list(range(4))
@@ -90,7 +90,7 @@ class Toolchain:
         if self.arch == 'sandbox' and override_toolchain:
             self.gcc = override_toolchain
 
-        env = self.MakeEnvironment(False)
+        env = self.MakeEnvironment()
 
         # As a basic sanity check, run the C compiler with --version
         cmd = [fname, '--version']
@@ -139,7 +139,7 @@ class Toolchain:
         """Get toolchain wrapper from the setting file.
         """
         value = ''
-        for name, value in bsettings.GetItems('toolchain-wrapper'):
+        for name, value in bsettings.get_items('toolchain-wrapper'):
             if not value:
                 print("Warning: Wrapper not found")
         if value:
@@ -156,9 +156,10 @@ class Toolchain:
         Returns:
             Value of that environment variable or arguments
         """
-        wrapper = self.GetWrapper()
         if which == VAR_CROSS_COMPILE:
-            return wrapper + os.path.join(self.path, self.cross)
+            wrapper = self.GetWrapper()
+            base = '' if self.arch == 'sandbox' else self.path
+            return wrapper + os.path.join(base, self.cross)
         elif which == VAR_PATH:
             return self.path
         elif which == VAR_ARCH:
@@ -171,12 +172,12 @@ class Toolchain:
         else:
             raise ValueError('Unknown arg to GetEnvArgs (%d)' % which)
 
-    def MakeEnvironment(self, full_path):
+    def MakeEnvironment(self, env=None):
         """Returns an environment for using the toolchain.
 
-        Thie takes the current environment and adds CROSS_COMPILE so that
+        This takes the current environment and adds CROSS_COMPILE so that
         the tool chain will operate correctly. This also disables localized
-        output and possibly unicode encoded output of all build tools by
+        output and possibly Unicode encoded output of all build tools by
         adding LC_ALL=C.
 
         Note that os.environb is used to obtain the environment, since in some
@@ -187,25 +188,23 @@ class Toolchain:
              569-570: surrogates not allowed
 
         Args:
-            full_path: Return the full path in CROSS_COMPILE and don't set
-                PATH
+            env (dict of bytes): Original environment, used for testing
+
         Returns:
             Dict containing the (bytes) environment to use. This is based on the
-            current environment, with changes as needed to CROSS_COMPILE, PATH
-            and LC_ALL.
+            current environment, with changes as needed to CROSS_COMPILE and
+            LC_ALL.
         """
-        env = dict(os.environb)
+        env = dict(env or os.environb)
+
         wrapper = self.GetWrapper()
 
         if self.override_toolchain:
             # We'll use MakeArgs() to provide this
             pass
-        elif full_path:
+        else:
             env[b'CROSS_COMPILE'] = tools.to_bytes(
                 wrapper + os.path.join(self.path, self.cross))
-        else:
-            env[b'CROSS_COMPILE'] = tools.to_bytes(wrapper + self.cross)
-            env[b'PATH'] = tools.to_bytes(self.path) + b':' + env[b'PATH']
 
         env[b'LC_ALL'] = b'C'
 
@@ -248,7 +247,7 @@ class Toolchains:
         self.prefixes = {}
         self.paths = []
         self.override_toolchain = override_toolchain
-        self._make_flags = dict(bsettings.GetItems('make-flags'))
+        self._make_flags = dict(bsettings.get_items('make-flags'))
 
     def GetPathList(self, show_warning=True):
         """Get a list of available toolchain paths
@@ -260,12 +259,12 @@ class Toolchains:
             List of strings, each a path to a toolchain mentioned in the
             [toolchain] section of the settings file.
         """
-        toolchains = bsettings.GetItems('toolchain')
+        toolchains = bsettings.get_items('toolchain')
         if show_warning and not toolchains:
             print(("Warning: No tool chains. Please run 'buildman "
                    "--fetch-arch all' to download all available toolchains, or "
                    "add a [toolchain] section to your buildman config file "
-                   "%s. See README for details" %
+                   "%s. See buildman.rst for details" %
                    bsettings.config_fname))
 
         paths = []
@@ -282,7 +281,7 @@ class Toolchains:
         Args:
             show_warning: True to show a warning if there are no tool chains.
         """
-        self.prefixes = bsettings.GetItems('toolchain-prefix')
+        self.prefixes = bsettings.get_items('toolchain-prefix')
         self.paths += self.GetPathList(show_warning)
 
     def Add(self, fname, test=True, verbose=False, priority=PRIORITY_CALC,
@@ -398,7 +397,7 @@ class Toolchains:
         returns:
             toolchain object, or None if none found
         """
-        for tag, value in bsettings.GetItems('toolchain-alias'):
+        for tag, value in bsettings.get_items('toolchain-alias'):
             if arch == tag:
                 for alias in value.split():
                     if alias in self.toolchains:
@@ -420,7 +419,7 @@ class Toolchains:
         Returns:
             Resolved string
 
-        >>> bsettings.Setup()
+        >>> bsettings.setup(None)
         >>> tcs = Toolchains()
         >>> tcs.Add('fred', False)
         >>> var_dict = {'oblique' : 'OBLIQUE', 'first' : 'fi${second}rst', \
@@ -441,7 +440,7 @@ class Toolchains:
             args = args[:m.start(0)] + value + args[m.end(0):]
         return args
 
-    def GetMakeArguments(self, board):
+    def GetMakeArguments(self, brd):
         """Returns 'make' arguments for a given board
 
         The flags are in a section called 'make-flags'. Flags are named
@@ -462,13 +461,13 @@ class Toolchains:
         A special 'target' variable is set to the board target.
 
         Args:
-            board: Board object for the board to check.
+            brd: Board object for the board to check.
         Returns:
             'make' flags for that board, or '' if none
         """
-        self._make_flags['target'] = board.target
+        self._make_flags['target'] = brd.target
         arg_str = self.ResolveReferences(self._make_flags,
-                           self._make_flags.get(board.target, ''))
+                           self._make_flags.get(brd.target, ''))
         args = re.findall("(?:\".*?\"|\S)+", arg_str)
         i = 0
         while i < len(args):
@@ -498,7 +497,7 @@ class Toolchains:
         if arch == 'aarch64':
             arch = 'arm64'
         base = 'https://www.kernel.org/pub/tools/crosstool/files/bin'
-        versions = ['11.1.0', '9.2.0', '7.3.0', '6.4.0', '4.9.4']
+        versions = ['13.2.0', '12.2.0']
         links = []
         for version in versions:
             url = '%s/%s/%s/' % (base, arch, version)
@@ -597,5 +596,5 @@ class Toolchains:
         if not self.TestSettingsHasPath(dirpath):
             print(("Adding 'download' to config file '%s'" %
                    bsettings.config_fname))
-            bsettings.SetItem('toolchain', 'download', '%s/*/*' % dest)
+            bsettings.set_item('toolchain', 'download', '%s/*/*' % dest)
         return 0

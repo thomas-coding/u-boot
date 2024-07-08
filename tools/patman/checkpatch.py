@@ -3,13 +3,14 @@
 #
 
 import collections
+import concurrent.futures
 import os
 import re
 import sys
 
-from patman import command
 from patman import gitutil
-from patman import terminal
+from u_boot_pylib import command
+from u_boot_pylib import terminal
 
 EMACS_PREFIX = r'(?:[0-9]{4}.*\.patch:[0-9]+: )?'
 TYPE_NAME = r'([A-Z_]+:)?'
@@ -186,7 +187,7 @@ def check_patch_parse(checkpatch_output, verbose=False):
     return result
 
 
-def check_patch(fname, verbose=False, show_types=False):
+def check_patch(fname, verbose=False, show_types=False, use_tree=False):
     """Run checkpatch.pl on a file and parse the results.
 
     Args:
@@ -194,6 +195,7 @@ def check_patch(fname, verbose=False, show_types=False):
         verbose: True to print out every line of the checkpatch output as it is
             parsed
         show_types: Tell checkpatch to show the type (number) of each message
+        use_tree (bool): If False we'll pass '--no-tree' to checkpatch.
 
     Returns:
         namedtuple containing:
@@ -210,7 +212,9 @@ def check_patch(fname, verbose=False, show_types=False):
             stdout: Full output of checkpatch
     """
     chk = find_check_patch()
-    args = [chk, '--no-tree']
+    args = [chk]
+    if not use_tree:
+        args.append('--no-tree')
     if show_types:
         args.append('--show-types')
     output = command.output(*args, fname, raise_on_error=False)
@@ -236,31 +240,36 @@ def get_warning_msg(col, msg_type, fname, line, msg):
     line_str = '' if line is None else '%d' % line
     return '%s:%s: %s: %s\n' % (fname, line_str, msg_type, msg)
 
-def check_patches(verbose, args):
+def check_patches(verbose, args, use_tree):
     '''Run the checkpatch.pl script on each patch'''
     error_count, warning_count, check_count = 0, 0, 0
     col = terminal.Color()
 
-    for fname in args:
-        result = check_patch(fname, verbose)
-        if not result.ok:
-            error_count += result.errors
-            warning_count += result.warnings
-            check_count += result.checks
-            print('%d errors, %d warnings, %d checks for %s:' % (result.errors,
-                    result.warnings, result.checks, col.build(col.BLUE, fname)))
-            if (len(result.problems) != result.errors + result.warnings +
-                    result.checks):
-                print("Internal error: some problems lost")
-            # Python seems to get confused by this
-            # pylint: disable=E1133
-            for item in result.problems:
-                sys.stderr.write(
-                    get_warning_msg(col, item.get('type', '<unknown>'),
-                        item.get('file', '<unknown>'),
-                        item.get('line', 0), item.get('msg', 'message')))
-            print
-            #print(stdout)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        futures = []
+        for fname in args:
+            f = executor.submit(check_patch, fname, verbose, use_tree=use_tree)
+            futures.append(f)
+
+        for fname, f in zip(args, futures):
+            result = f.result()
+            if not result.ok:
+                error_count += result.errors
+                warning_count += result.warnings
+                check_count += result.checks
+                print('%d errors, %d warnings, %d checks for %s:' % (result.errors,
+                        result.warnings, result.checks, col.build(col.BLUE, fname)))
+                if (len(result.problems) != result.errors + result.warnings +
+                        result.checks):
+                    print("Internal error: some problems lost")
+                # Python seems to get confused by this
+                # pylint: disable=E1133
+                for item in result.problems:
+                    sys.stderr.write(
+                        get_warning_msg(col, item.get('type', '<unknown>'),
+                            item.get('file', '<unknown>'),
+                            item.get('line', 0), item.get('msg', 'message')))
+                print
     if error_count or warning_count or check_count:
         str = 'checkpatch.pl found %d error(s), %d warning(s), %d checks(s)'
         color = col.GREEN

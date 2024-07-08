@@ -17,11 +17,10 @@
 #include "integrator-common.h"
 
 /* Integrator/AP-specific configuration */
-#define CONFIG_SYS_HZ_CLOCK		24000000	/* Timer 1 is clocked at 24Mhz */
+#define CFG_SYS_HZ_CLOCK		24000000	/* Timer 1 is clocked at 24Mhz */
 
 /* Flash settings */
-#define CONFIG_SYS_FLASH_SIZE		0x02000000 /* 32 MiB */
-#define CONFIG_SYS_MAX_FLASH_SECT	128
+#define CFG_SYS_FLASH_SIZE		0x02000000 /* 32 MiB */
 
 /*-----------------------------------------------------------------------
  * PCI definitions

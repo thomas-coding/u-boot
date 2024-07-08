@@ -10,7 +10,6 @@
 
 #define LOG_CATEGORY	LOGC_DM
 
-#include <common.h>
 #include <errno.h>
 #include <log.h>
 #include <malloc.h>
@@ -29,7 +28,7 @@ int device_chld_unbind(struct udevice *dev, struct driver *drv)
 
 	assert(dev);
 
-	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
+	device_foreach_child_safe(pos, n, dev) {
 		if (drv && (pos->driver != drv))
 			continue;
 
@@ -52,7 +51,7 @@ int device_chld_remove(struct udevice *dev, struct driver *drv,
 
 	assert(dev);
 
-	list_for_each_entry_safe(pos, n, &dev->child_head, sibling_node) {
+	device_foreach_child_safe(pos, n, dev) {
 		int ret;
 
 		if (drv && (pos->driver != drv))

@@ -6,7 +6,6 @@
  */
 
 #include <command.h>
-#include <common.h>
 #include <fdt_support.h>
 #include <gsc.h>
 #include <hwconfig.h>
@@ -32,9 +31,10 @@ DECLARE_GLOBAL_DATA_PTR;
 int board_phy_config(struct phy_device *phydev)
 {
 	unsigned short val;
+	ofnode node;
 
-	/* Marvel 88E1510 */
-	if (phydev->phy_id == 0x1410dd1) {
+	switch (phydev->phy_id) {
+	case 0x1410dd1:
 		puts("MV88E1510");
 		/*
 		 * Page 3, Register 16: LED[2:0] Function Control Register
@@ -47,10 +47,8 @@ int board_phy_config(struct phy_device *phydev)
 		val |= 0x0017;
 		phy_write(phydev, MDIO_DEVAD_NONE, 16, val);
 		phy_write(phydev, MDIO_DEVAD_NONE, 22, 0);
-	}
-
-	/* TI DP83867 */
-	else if (phydev->phy_id == 0x2000a231) {
+		break;
+	case 0x2000a231:
 		puts("TIDP83867 ");
 		/* LED configuration */
 		val = 0;
@@ -66,6 +64,40 @@ int board_phy_config(struct phy_device *phydev)
 		val &= ~0x1f00;
 		val |= 0x0b00; /* chD tx clock*/
 		phy_write(phydev, MDIO_DEVAD_NONE, 14, val);
+		break;
+	case 0xd565a401:
+		puts("GPY111 ");
+		node = phy_get_ofnode(phydev);
+		if (ofnode_valid(node)) {
+			u32 rx_delay, tx_delay;
+
+			rx_delay = ofnode_read_u32_default(node, "rx-internal-delay-ps", 2000);
+			tx_delay = ofnode_read_u32_default(node, "tx-internal-delay-ps", 2000);
+			val = phy_read(phydev, MDIO_DEVAD_NONE, 0x17);
+			val &= ~((0x7 << 12) | (0x7 << 8));
+			val |= (rx_delay / 500) << 12;
+			val |= (tx_delay / 500) << 8;
+			phy_write(phydev, MDIO_DEVAD_NONE, 0x17, val);
+		}
+		break;
+	}
+
+	/* Fixed PHY: for GW5904/GW5909 this is Marvell 88E6176 GbE Switch */
+	if (phydev->phy_id == PHY_FIXED_ID &&
+	    (board_type == GW5904 || board_type == GW5909)) {
+		struct mii_dev *bus = miiphy_get_dev_by_name("mdio");
+
+		puts("MV88E61XX ");
+		/* GPIO[0] output CLK125 for RGMII_REFCLK */
+		bus->write(bus, 0x1c, 0, 0x1a, (1 << 15) | (0x62 << 8) | 0xfe);
+		bus->write(bus, 0x1c, 0, 0x1a, (1 << 15) | (0x68 << 8) | 7);
+
+		/* Port 0-3 LED configuration: Table 80/82 */
+		/* LED configuration: 7:4-green (8=Activity)  3:0 amber (8=Link) */
+		bus->write(bus, 0x10, 0, 0x16, 0x8088);
+		bus->write(bus, 0x11, 0, 0x16, 0x8088);
+		bus->write(bus, 0x12, 0, 0x16, 0x8088);
+		bus->write(bus, 0x13, 0, 0x16, 0x8088);
 	}
 
 	if (phydev->drv->config)
@@ -73,38 +105,6 @@ int board_phy_config(struct phy_device *phydev)
 
 	return 0;
 }
-
-#ifdef CONFIG_MV88E61XX_SWITCH
-int mv88e61xx_hw_reset(struct phy_device *phydev)
-{
-	struct mii_dev *bus = phydev->bus;
-
-	/* GPIO[0] output, CLK125 */
-	debug("enabling RGMII_REFCLK\n");
-	bus->write(bus, 0x1c /*MV_GLOBAL2*/, 0,
-		   0x1a /*MV_SCRATCH_MISC*/,
-		   (1 << 15) | (0x62 /*MV_GPIO_DIR*/ << 8) | 0xfe);
-	bus->write(bus, 0x1c /*MV_GLOBAL2*/, 0,
-		   0x1a /*MV_SCRATCH_MISC*/,
-		   (1 << 15) | (0x68 /*MV_GPIO01_CNTL*/ << 8) | 7);
-
-	/* RGMII delay - Physical Control register bit[15:14] */
-	debug("setting port%d RGMII rx/tx delay\n", CONFIG_MV88E61XX_CPU_PORT);
-	/* forced 1000mbps full-duplex link */
-	bus->write(bus, 0x10 + CONFIG_MV88E61XX_CPU_PORT, 0, 1, 0xc0fe);
-	phydev->autoneg = AUTONEG_DISABLE;
-	phydev->speed = SPEED_1000;
-	phydev->duplex = DUPLEX_FULL;
-
-	/* LED configuration: 7:4-green (8=Activity)  3:0 amber (8=Link) */
-	bus->write(bus, 0x10, 0, 0x16, 0x8088);
-	bus->write(bus, 0x11, 0, 0x16, 0x8088);
-	bus->write(bus, 0x12, 0, 0x16, 0x8088);
-	bus->write(bus, 0x13, 0, 0x16, 0x8088);
-
-	return 0;
-}
-#endif // CONFIG_MV88E61XX_SWITCH
 
 #if defined(CONFIG_VIDEO_IPUV3)
 static void enable_hdmi(struct display_info_t const *dev)
@@ -618,8 +618,7 @@ void setup_board_gpio(int board, struct ventana_board_info *info)
 					       ctrl);
 			gpio_requestf(cfg->gpio_param, "dio%d", i);
 			gpio_direction_input(cfg->gpio_param);
-		} else if (hwconfig_subarg_cmp(arg, "mode", "pwm") &&
-			   cfg->pwm_padmux) {
+		} else if (hwconfig_subarg_cmp(arg, "mode", "pwm")) {
 			if (!cfg->pwm_param) {
 				printf("DIO%d:  Error: pwm config invalid\n",
 				       i);
@@ -1266,3 +1265,8 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	return 0;
 }
 #endif /* CONFIG_OF_BOARD_SETUP */
+
+int board_mmc_get_env_dev(int devno)
+{
+	return devno;
+}

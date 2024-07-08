@@ -11,7 +11,6 @@
  */
 
 #include <config.h>
-#include <common.h>
 #include <command.h>
 #include <clk.h>
 #include <cpu_func.h>
@@ -26,6 +25,7 @@
 #include <linux/bitops.h>
 #include <linux/delay.h>
 #include <linux/err.h>
+#include <linux/printk.h>
 #include <power/regulator.h>
 #include <malloc.h>
 #include <fsl_esdhc_imx.h>
@@ -634,7 +634,7 @@ static void set_sysctl(struct fsl_esdhc_priv *priv, struct mmc *mmc, uint clock)
 	priv->clock = clock;
 }
 
-#ifdef MMC_SUPPORTS_TUNING
+#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 static int esdhc_change_pinstate(struct udevice *dev)
 {
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
@@ -881,7 +881,7 @@ static int fsl_esdhc_execute_tuning(struct udevice *dev, uint32_t opcode)
 		esdhc_write32(&regs->mixctrl, val);
 
 		/* We are using STD tuning, no need to check return value */
-		mmc_send_tuning(mmc, opcode, NULL);
+		mmc_send_tuning(mmc, opcode);
 
 		ctrl = esdhc_read32(&regs->autoc12err);
 		if ((!(ctrl & MIX_CTRL_EXE_TUNE)) &&
@@ -912,7 +912,7 @@ static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 	int ret __maybe_unused;
 	u32 clock;
 
-#ifdef MMC_SUPPORTS_TUNING
+#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 	/*
 	 * call esdhc_set_timing() before update the clock rate,
 	 * This is because current we support DDR and SDR mode,
@@ -950,7 +950,7 @@ static int esdhc_set_ios_common(struct fsl_esdhc_priv *priv, struct mmc *mmc)
 			esdhc_setbits32(&regs->sysctl, SYSCTL_PEREN | SYSCTL_CKEN);
 	}
 
-#ifdef MMC_SUPPORTS_TUNING
+#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 	/*
 	 * For HS400/HS400ES mode, make sure set the strobe dll in the
 	 * target clock rate. So call esdhc_set_strobe_dll() after the
@@ -1060,6 +1060,30 @@ static int esdhc_getcd_common(struct fsl_esdhc_priv *priv)
 	return timeout > 0;
 }
 
+static int esdhc_wait_dat0_common(struct fsl_esdhc_priv *priv, int state,
+				  int timeout_us)
+{
+	struct fsl_esdhc *regs = priv->esdhc_regs;
+	int ret, err;
+	u32 tmp;
+
+	/* make sure the card clock keep on */
+	esdhc_setbits32(&regs->vendorspec, VENDORSPEC_FRC_SDCLK_ON);
+
+	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, tmp,
+				!!(tmp & PRSSTAT_DAT0) == !!state,
+				timeout_us);
+
+	/* change to default setting, let host control the card clock */
+	esdhc_clrbits32(&regs->vendorspec, VENDORSPEC_FRC_SDCLK_ON);
+
+	err = readx_poll_timeout(esdhc_read32, &regs->prsstat, tmp, tmp & PRSSTAT_SDOFF, 100);
+	if (err)
+		pr_warn("card clock not gate off as expect.\n");
+
+	return ret;
+}
+
 static int esdhc_reset(struct fsl_esdhc *regs)
 {
 	ulong start;
@@ -1109,11 +1133,19 @@ static int esdhc_set_ios(struct mmc *mmc)
 	return esdhc_set_ios_common(priv, mmc);
 }
 
+static int esdhc_wait_dat0(struct mmc *mmc, int state, int timeout_us)
+{
+	struct fsl_esdhc_priv *priv = mmc->priv;
+
+	return esdhc_wait_dat0_common(priv, state, timeout_us);
+}
+
 static const struct mmc_ops esdhc_ops = {
 	.getcd		= esdhc_getcd,
 	.init		= esdhc_init,
 	.send_cmd	= esdhc_send_cmd,
 	.set_ios	= esdhc_set_ios,
+	.wait_dat0	= esdhc_wait_dat0,
 };
 #endif
 
@@ -1319,7 +1351,7 @@ int fsl_esdhc_mmc_init(struct bd_info *bis)
 	struct fsl_esdhc_cfg *cfg;
 
 	cfg = calloc(sizeof(struct fsl_esdhc_cfg), 1);
-	cfg->esdhc_base = CONFIG_SYS_FSL_ESDHC_ADDR;
+	cfg->esdhc_base = CFG_SYS_FSL_ESDHC_ADDR;
 	cfg->sdhc_clk = gd->arch.sdhc_clk;
 	return fsl_esdhc_initialize(bis, cfg);
 }
@@ -1328,7 +1360,7 @@ int fsl_esdhc_mmc_init(struct bd_info *bis)
 #if CONFIG_IS_ENABLED(OF_LIBFDT)
 __weak int esdhc_status_fixup(void *blob, const char *compat)
 {
-	if (IS_ENABLED(FSL_ESDHC_PIN_MUX) && !hwconfig("esdhc")) {
+	if (IS_ENABLED(CONFIG_FSL_ESDHC_PIN_MUX) && !hwconfig("esdhc")) {
 		do_fixup_by_compat(blob, compat, "status", "disabled",
 				sizeof("disabled"), 1);
 		return 1;
@@ -1487,8 +1519,6 @@ static int fsl_esdhc_probe(struct udevice *dev)
 	 * work as expected.
 	 */
 
-	init_clk_usdhc(dev_seq(dev));
-
 #if CONFIG_IS_ENABLED(CLK)
 	/* Assigned clock already set clock */
 	ret = clk_get_by_name(dev, "per", &priv->per_clk);
@@ -1504,6 +1534,8 @@ static int fsl_esdhc_probe(struct udevice *dev)
 
 	priv->sdhc_clk = clk_get_rate(&priv->per_clk);
 #else
+	init_clk_usdhc(dev_seq(dev));
+
 	priv->sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK + dev_seq(dev));
 	if (priv->sdhc_clk <= 0) {
 		dev_err(dev, "Unable to get clk for %s\n", dev->name);
@@ -1576,32 +1608,16 @@ static int __maybe_unused fsl_esdhc_set_enhanced_strobe(struct udevice *dev)
 static int fsl_esdhc_wait_dat0(struct udevice *dev, int state,
 				int timeout_us)
 {
-	int ret, err;
-	u32 tmp;
 	struct fsl_esdhc_priv *priv = dev_get_priv(dev);
-	struct fsl_esdhc *regs = priv->esdhc_regs;
 
-	/* make sure the card clock keep on */
-	esdhc_setbits32(&regs->vendorspec, VENDORSPEC_FRC_SDCLK_ON);
-
-	ret = readx_poll_timeout(esdhc_read32, &regs->prsstat, tmp,
-				!!(tmp & PRSSTAT_DAT0) == !!state,
-				timeout_us);
-
-	/* change to default setting, let host control the card clock */
-	esdhc_clrbits32(&regs->vendorspec, VENDORSPEC_FRC_SDCLK_ON);
-	err = readx_poll_timeout(esdhc_read32, &regs->prsstat, tmp, tmp & PRSSTAT_SDOFF, 100);
-	if (err)
-		dev_warn(dev, "card clock not gate off as expect.\n");
-
-	return ret;
+	return esdhc_wait_dat0_common(priv, state, timeout_us);
 }
 
 static const struct dm_mmc_ops fsl_esdhc_ops = {
 	.get_cd		= fsl_esdhc_get_cd,
 	.send_cmd	= fsl_esdhc_send_cmd,
 	.set_ios	= fsl_esdhc_set_ios,
-#ifdef MMC_SUPPORTS_TUNING
+#if CONFIG_IS_ENABLED(MMC_SUPPORTS_TUNING)
 	.execute_tuning	= fsl_esdhc_execute_tuning,
 #endif
 #if CONFIG_IS_ENABLED(MMC_HS400_ES_SUPPORT)

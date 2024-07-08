@@ -10,13 +10,13 @@
  *	Copyright 2004	Sun Microsystems, Inc.
  */
 
-#include <common.h>
 #include <log.h>
 #include <malloc.h>
 #include <linux/stat.h>
 #include <linux/time.h>
 #include <linux/ctype.h>
 #include <asm/byteorder.h>
+#include <u-boot/zlib.h>
 #include "zfs_common.h"
 #include "div64.h"
 
@@ -183,7 +183,8 @@ static int
 zlib_decompress(void *s, void *d,
 				uint32_t slen, uint32_t dlen)
 {
-	if (zlib_decompress(s, d, slen, dlen) < 0)
+	uLongf z_dest_len = dlen;
+	if (uncompress(d, &z_dest_len, s, slen) != Z_OK)
 		return ZFS_ERR_BAD_FS;
 	return ZFS_ERR_NONE;
 }
@@ -334,6 +335,12 @@ vdev_uberblock_compare(uberblock_t *ub1, uberblock_t *ub2)
 	return 0;
 }
 
+static inline int
+is_supported_spa_version(uint64_t version) {
+	return version == FEATURES_SUPPORTED_SPA_VERSION ||
+		(version > 0 && version <= SPA_VERSION);
+}
+
 /*
  * Three pieces of information are needed to verify an uberblock: the magic
  * number, the version number, and the checksum.
@@ -355,14 +362,12 @@ uberblock_verify(uberblock_t *uber, int offset, struct zfs_data *data)
 		return ZFS_ERR_BAD_FS;
 	}
 
-	if (zfs_to_cpu64(uber->ub_magic, LITTLE_ENDIAN) == UBERBLOCK_MAGIC
-		&& zfs_to_cpu64(uber->ub_version, LITTLE_ENDIAN) > 0
-		&& zfs_to_cpu64(uber->ub_version, LITTLE_ENDIAN) <= SPA_VERSION)
+	if (zfs_to_cpu64(uber->ub_magic, LITTLE_ENDIAN) == UBERBLOCK_MAGIC &&
+		is_supported_spa_version(zfs_to_cpu64(uber->ub_version, LITTLE_ENDIAN)))
 		endian = LITTLE_ENDIAN;
 
-	if (zfs_to_cpu64(uber->ub_magic, BIG_ENDIAN) == UBERBLOCK_MAGIC
-		&& zfs_to_cpu64(uber->ub_version, BIG_ENDIAN) > 0
-		&& zfs_to_cpu64(uber->ub_version, BIG_ENDIAN) <= SPA_VERSION)
+	if (zfs_to_cpu64(uber->ub_magic, BIG_ENDIAN) == UBERBLOCK_MAGIC &&
+		is_supported_spa_version(zfs_to_cpu64(uber->ub_version, BIG_ENDIAN)))
 		endian = BIG_ENDIAN;
 
 	if (endian == UNKNOWN_ENDIAN) {
@@ -655,7 +660,7 @@ dmu_read(dnode_end_t *dn, uint64_t blkid, void **buf,
 											dn->endian)
 				<< SPA_MINBLOCKSHIFT;
 			*buf = malloc(size);
-			if (*buf) {
+			if (!*buf) {
 				err = ZFS_ERR_OUT_OF_MEMORY;
 				break;
 			}
@@ -1559,6 +1564,10 @@ nvlist_find_value(char *nvlist, char *name, int valtype, char **val,
 	return 0;
 }
 
+int is_word_aligned_ptr(void *ptr) {
+	return ((uintptr_t)ptr & (sizeof(void *) - 1)) == 0;
+}
+
 int
 zfs_nvlist_lookup_uint64(char *nvlist, char *name, uint64_t *out)
 {
@@ -1572,6 +1581,20 @@ zfs_nvlist_lookup_uint64(char *nvlist, char *name, uint64_t *out)
 	if (size < sizeof(uint64_t)) {
 		printf("invalid uint64\n");
 		return ZFS_ERR_BAD_FS;
+	}
+
+	/* On arm64, calling be64_to_cpu() on a value stored at a memory address
+	 * that's not 8-byte aligned causes the CPU to reset. Avoid that by copying the
+	 * value somewhere else if needed.
+	 */
+	if (!is_word_aligned_ptr((void *)nvpair)) {
+		uint64_t *alignedptr = malloc(sizeof(uint64_t));
+		if (!alignedptr)
+			return 0;
+		memcpy(alignedptr, nvpair, sizeof(uint64_t));
+		*out = be64_to_cpu(*alignedptr);
+		free(alignedptr);
+		return 1;
 	}
 
 	*out = be64_to_cpu(*(uint64_t *) nvpair);
@@ -1617,6 +1640,11 @@ zfs_nvlist_lookup_nvlist(char *nvlist, char *name)
 							  &size, 0);
 	if (!found)
 		return 0;
+
+	/* Allocate 12 bytes in addition to the nvlist size: One uint32 before the
+	 * nvlist to hold the encoding method, and two zero uint32's after the
+	 * nvlist as the NULL terminator.
+	 */
 	ret = calloc(1, size + 3 * sizeof(uint32_t));
 	if (!ret)
 		return 0;
@@ -1765,7 +1793,7 @@ check_pool_label(struct zfs_data *data)
 		return ZFS_ERR_BAD_FS;
 	}
 
-	if (version > SPA_VERSION) {
+	if (!is_supported_spa_version(version)) {
 		free(nvlist);
 		printf("SPA version too new %llu > %llu\n",
 			   (unsigned long long) version,
@@ -2112,7 +2140,7 @@ zfs_read(zfs_file_t file, char *buf, uint64_t len)
 		 * Find requested blkid and the offset within that block.
 		 */
 		uint64_t blkid = file->offset + red;
-		blkid = do_div(blkid, blksz);
+		uint64_t blkoff = do_div(blkid, blksz);
 		free(data->file_buf);
 		data->file_buf = 0;
 
@@ -2127,8 +2155,7 @@ zfs_read(zfs_file_t file, char *buf, uint64_t len)
 
 		movesize = min(length, data->file_end - (int)file->offset - red);
 
-		memmove(buf, data->file_buf + file->offset + red
-				- data->file_start, movesize);
+		memmove(buf, data->file_buf + blkoff, movesize);
 		buf += movesize;
 		length -= movesize;
 		red += movesize;

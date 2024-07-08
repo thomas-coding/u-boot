@@ -11,7 +11,6 @@
  * published by the Free Software Foundation.
  */
 
-#include <common.h>
 #include <command.h>
 #include <env.h>
 #include <exports.h>
@@ -27,6 +26,7 @@
 #include <ubi_uboot.h>
 #include <linux/errno.h>
 #include <jffs2/load_kernel.h>
+#include <linux/log2.h>
 
 #undef ubi_msg
 #define ubi_msg(fmt, ...) printf("UBI: " fmt "\n", ##__VA_ARGS__)
@@ -80,6 +80,70 @@ static int ubi_info(int layout)
 		display_volume_info(ubi);
 	else
 		display_ubi_info(ubi);
+
+	return 0;
+}
+
+static int ubi_list(const char *var, int numeric)
+{
+	size_t namelen, len, size;
+	char *str, *str2;
+	int i;
+
+	if (!var) {
+		for (i = 0; i < (ubi->vtbl_slots + 1); i++) {
+			if (!ubi->volumes[i])
+				continue;
+			if (ubi->volumes[i]->vol_id >= UBI_INTERNAL_VOL_START)
+				continue;
+			printf("%d: %s\n",
+			       ubi->volumes[i]->vol_id,
+			       ubi->volumes[i]->name);
+		}
+		return 0;
+	}
+
+	len = 0;
+	size = 16;
+	str = malloc(size);
+	if (!str)
+		return 1;
+
+	for (i = 0; i < (ubi->vtbl_slots + 1); i++) {
+		if (!ubi->volumes[i])
+			continue;
+		if (ubi->volumes[i]->vol_id >= UBI_INTERNAL_VOL_START)
+			continue;
+
+		if (numeric)
+			namelen = 10; /* strlen(stringify(INT_MAX)) */
+		else
+			namelen = strlen(ubi->volumes[i]->name);
+
+		if (len + namelen + 1 > size) {
+			size = roundup_pow_of_two(len + namelen + 1) * 2;
+			str2 = realloc(str, size);
+			if (!str2) {
+				free(str);
+				return 1;
+			}
+			str = str2;
+		}
+
+		if (len)
+			str[len++] = ' ';
+
+		if (numeric) {
+			len += sprintf(str + len, "%d", ubi->volumes[i]->vol_id) + 1;
+		} else {
+			memcpy(str + len, ubi->volumes[i]->name, namelen);
+			len += namelen;
+			str[len] = 0;
+		}
+	}
+
+	env_set(var, str);
+	free(str);
 
 	return 0;
 }
@@ -184,7 +248,7 @@ static int ubi_create_vol(char *volume, int64_t size, int dynamic, int vol_id,
 
 static struct ubi_volume *ubi_find_volume(char *volume)
 {
-	struct ubi_volume *vol = NULL;
+	struct ubi_volume *vol;
 	int i;
 
 	for (i = 0; i < ubi->vtbl_slots; i++) {
@@ -291,12 +355,17 @@ static int ubi_rename_vol(char *oldname, char *newname)
 
 static int ubi_volume_continue_write(char *volume, void *buf, size_t size)
 {
-	int err = 1;
+	int err;
 	struct ubi_volume *vol;
 
 	vol = ubi_find_volume(volume);
 	if (vol == NULL)
 		return ENODEV;
+
+	if (!vol->updating) {
+		printf("UBI volume update was not initiated\n");
+		return EINVAL;
+	}
 
 	err = ubi_more_update_data(ubi, vol, buf, size);
 	if (err < 0) {
@@ -327,8 +396,8 @@ static int ubi_volume_continue_write(char *volume, void *buf, size_t size)
 int ubi_volume_begin_write(char *volume, void *buf, size_t size,
 	size_t full_size)
 {
-	int err = 1;
-	int rsvd_bytes = 0;
+	int err;
+	int rsvd_bytes;
 	struct ubi_volume *vol;
 
 	vol = ubi_find_volume(volume);
@@ -346,6 +415,10 @@ int ubi_volume_begin_write(char *volume, void *buf, size_t size,
 		printf("Cannot start volume update\n");
 		return -err;
 	}
+
+	/* The volume is just wiped out */
+	if (!full_size)
+		return 0;
 
 	return ubi_volume_continue_write(volume, buf, size);
 }
@@ -509,7 +582,7 @@ static int ubi_detach(void)
 int ubi_part(char *part_name, const char *vid_header_offset)
 {
 	struct mtd_info *mtd;
-	int err = 0;
+	int err;
 
 	if (ubi && ubi->mtd && !strcmp(ubi->mtd->name, part_name)) {
 		printf("UBI partition '%s' already selected\n", part_name);
@@ -540,7 +613,7 @@ int ubi_part(char *part_name, const char *vid_header_offset)
 
 static int do_ubi(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
-	int64_t size = 0;
+	int64_t size;
 	ulong addr = 0;
 	bool skipcheck = false;
 
@@ -584,6 +657,21 @@ static int do_ubi(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 		if (argc > 2 && !strncmp(argv[2], "l", 1))
 			layout = 1;
 		return ubi_info(layout);
+	}
+
+	if (strcmp(argv[1], "list") == 0) {
+		int numeric = 0;
+		if (argc >= 3 && argv[2][0] == '-') {
+			if (strcmp(argv[2], "-numeric") == 0)
+				numeric = 1;
+			else
+				return CMD_RET_USAGE;
+		}
+		if (!numeric && argc != 2 && argc != 3)
+			return CMD_RET_USAGE;
+		if (numeric && argc != 3 && argc != 4)
+			return CMD_RET_USAGE;
+		return ubi_list(argv[numeric ? 3 : 2], numeric);
 	}
 
 	if (strcmp(argv[1], "check") == 0) {
@@ -725,6 +813,11 @@ U_BOOT_CMD(
 		" header offset)\n"
 	"ubi info [l[ayout]]"
 		" - Display volume and ubi layout information\n"
+	"ubi list [flags]"
+		" - print the list of volumes\n"
+	"ubi list [flags] <varname>"
+		" - set environment variable to the list of volumes"
+		" (flags can be -numeric)\n"
 	"ubi check volumename"
 		" - check if volumename exists\n"
 	"ubi create[vol] volume [size] [type] [id] [--skipcheck]\n"

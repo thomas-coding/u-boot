@@ -11,28 +11,21 @@
 #ifndef __ARISTAINETOS2_CONFIG_H
 #define __ARISTAINETOS2_CONFIG_H
 
-#define CONFIG_HOSTNAME		"aristainetos2"
-
 #if (CONFIG_SYS_BOARD_VERSION == 5)
-#define CONFIG_MXC_UART_BASE	UART2_BASE
 #define CONSOLE_DEV	"ttymxc1"
 #elif (CONFIG_SYS_BOARD_VERSION == 6)
-#define CONFIG_MXC_UART_BASE	UART1_BASE
 #define CONSOLE_DEV	"ttymxc0"
 #endif
 
 /* Framebuffer */
-#define CONFIG_SYS_LDB_CLOCK	28341000
+#define CFG_SYS_LDB_CLOCK	28341000
 
 #include "mx6_common.h"
 
-
 /* MMC Configs */
-#define CONFIG_SYS_FSL_ESDHC_ADDR      USDHC1_BASE_ADDR
+#define CFG_SYS_FSL_ESDHC_ADDR      USDHC1_BASE_ADDR
 
-#define CONFIG_FEC_MXC_PHYADDR		0
-
-#define CONFIG_SYS_SPI_ST_ENABLE_WP_PIN
+#define CFG_FEC_MXC_PHYADDR		0
 
 #ifdef CONFIG_IMX_HAB
 #define HAB_EXTRA_SETTINGS \
@@ -100,7 +93,7 @@
 	"done\0"
 #endif
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	"disable_giga=yes\0" \
 	"usb_pgood_delay=2000\0" \
 	"nor_bootdelay=-2\0" \
@@ -112,9 +105,6 @@
 	"splashpos=m,m\0" \
 	"console=" CONSOLE_DEV "\0" \
 	"emmcroot=/dev/mmcblk1p1 rootwait rw\0" \
-	"mtdids=nor0=spi0.0\0" \
-	"mtdparts=mtdparts=spi0.0:832k(u-boot),64k(env),64k(env-red)," \
-		"-(ubi-nor)\0" \
 	"mk_fitfile_path=setenv fit_file /${sysnum}/system.itb\0" \
 	"mk_rescue_fitfile_path=setenv rescue_fit_file /${rescue_sysnum}/system.itb\0" \
 	"mk_uboot_path=setenv uboot /${sysnum}/u-boot.imx\0" \
@@ -413,33 +403,21 @@
 /* Physical Memory Map */
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-#define CONFIG_SYS_FSL_USDHC_NUM	2
+#define CFG_SYS_FSL_USDHC_NUM	2
 
 /* DMA stuff, needed for GPMI/MXS NAND support */
 
 /* USB Configs */
-#define CONFIG_EHCI_HCD_INIT_AFTER_RESET	/* For OTG port */
-#define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_MXC_USB_FLAGS	0
+#define CFG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
+#define CFG_MXC_USB_FLAGS	0
 
 /* UBI support */
 
-/* Framebuffer */
-/* check this console not needed, after test remove it */
-#define CONFIG_IMX_VIDEO_SKIP
-
-#define CONFIG_IMX6_PWM_PER_CLK	66000000
-
-#define CONFIG_ENV_FLAGS_LIST_STATIC "ethaddr:mw,serial#:sw,board_type:sw," \
+#define CFG_ENV_FLAGS_LIST_STATIC "ethaddr:mw,serial#:sw,board_type:sw," \
 		"sysnum:dw,panel:sw,ipaddr:iw,serverip:iw"
 
 #endif                         /* __ARISTAINETOS2_CONFIG_H */

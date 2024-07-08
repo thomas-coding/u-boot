@@ -3,7 +3,6 @@
  * Copyright (c) 2016-2018 Toradex, Inc.
  */
 
-#include <common.h>
 #include <dm.h>
 #include <env.h>
 #include <init.h>
@@ -14,8 +13,10 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/pinmux.h>
 #include <env_internal.h>
+#include <fdt_support.h>
 #include <pci_tegra.h>
 #include <linux/delay.h>
+#include <linux/printk.h>
 #include <power/as3722.h>
 #include <power/pmic.h>
 
@@ -89,16 +90,27 @@ int arch_misc_init(void)
 	return 0;
 }
 
-int checkboard(void)
-{
-	puts("Model: Toradex Apalis TK1 2GB\n");
-
-	return 0;
-}
-
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
+	u8 enetaddr[6];
+
+	/* MAC addr */
+	if (eth_env_get_enetaddr("ethaddr", enetaddr)) {
+		int err = fdt_find_and_setprop(blob,
+					       "/pcie@1003000/pci@2,0/ethernet@0,0",
+					       "local-mac-address", enetaddr, 6, 0);
+
+		/* Older device trees might have used a different node name */
+		if (err < 0)
+			err = fdt_find_and_setprop(blob,
+						   "/pcie@1003000/pci@2,0/pcie@0",
+						   "local-mac-address", enetaddr, 6, 0);
+
+		if (err >= 0)
+			puts("   MAC address updated...\n");
+	}
+
 	return ft_common_board_setup(blob, bd);
 }
 #endif

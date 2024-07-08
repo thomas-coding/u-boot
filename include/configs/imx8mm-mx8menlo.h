@@ -8,9 +8,11 @@
 
 #include <configs/verdin-imx8mm.h>
 
+/* PHY needs a longer autoneg timeout */
+
 /* Custom initial environment variables */
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS					\
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS					\
 	BOOTENV								\
 	MEM_LAYOUT_ENV_SETTINGS						\
 	"devtype=mmc\0"							\
@@ -25,12 +27,9 @@
 		"fi ; "							\
 		"boot\0"						\
 	"boot_file=fitImage\0"						\
-	"console=ttymxc1\0"						\
+	"console=ttymxc0\0"						\
 	"fdt_addr=0x43000000\0"						\
 	"initrd_addr=0x43800000\0"					\
 	"kernel_image=fitImage\0"
-
-#undef CONFIG_MXC_UART_BASE
-#define CONFIG_MXC_UART_BASE		UART2_BASE_ADDR
 
 #endif /* __IMX8MM_MX8MENLO_H */

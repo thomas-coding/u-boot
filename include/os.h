@@ -17,6 +17,13 @@ struct rtc_time;
 struct sandbox_state;
 
 /**
+ * os_printf() - print directly to OS console
+ *
+ * @format: format string
+ */
+int os_printf(const char *format, ...);
+
+/**
  * Access to the OS read() system call
  *
  * @fd:		File descriptor as returned by os_open()
@@ -57,7 +64,7 @@ off_t os_lseek(int fd, off_t offset, int whence);
  * @fd:		File descriptor as returned by os_open()
  * Return:	file size or negative error code
  */
-int os_filesize(int fd);
+off_t os_filesize(int fd);
 
 /**
  * Access to the OS open() system call
@@ -91,6 +98,29 @@ int os_close(int fd);
  */
 int os_unlink(const char *pathname);
 
+/** os_persistent_fname() - Find the path to a test file
+ *
+ * @buf: Buffer to hold path
+ * @maxsize: Maximum size of buffer
+ * @fname: Leaf filename to find
+ * Returns: 0 on success, -ENOENT if file is not found, -ENOSPC if the buffer is
+ * too small
+ */
+int os_persistent_file(char *buf, int maxsize, const char *fname);
+
+/**
+ * os_mktemp() - Create a temporary file
+ * @fname: The template to use for the file name. This must end with 6 Xs. It
+ *         will be modified to the opened filename on success.
+ * @size: The size of the file
+ *
+ * Create a temporary file using @fname as a template, unlink it, and truncate
+ * it to @size.
+ *
+ * Return: A file descriptor, or negative errno on error
+ */
+int os_mktemp(char *fname, off_t size);
+
 /**
  * os_exit() - access to the OS exit() system call
  *
@@ -100,6 +130,27 @@ int os_unlink(const char *pathname);
  * @exit_code:	exit code for U-Boot
  */
 void os_exit(int exit_code) __attribute__((noreturn));
+
+/**
+ * os_alarm() - access to the OS alarm() system call
+ *
+ * @seconds: number of seconds before the signal is sent
+ * Returns: number of seconds remaining until any previously scheduled alarm was
+ * due to be delivered; 0 if there was no previously scheduled alarm
+ */
+unsigned int os_alarm(unsigned int seconds);
+
+/**
+ * os_set_alarm_handler() - set handler for SIGALRM
+ *
+ * @handler:   The handler function. Pass NULL for SIG_DFL.
+ */
+void os_set_alarm_handler(void (*handler)(int));
+
+/**
+ * os_raise_sigalrm() - do raise(SIGALRM)
+ */
+void os_raise_sigalrm(void);
 
 /**
  * os_tty_raw() - put tty into raw mode to mimic serial console better
@@ -287,6 +338,14 @@ void os_putc(int ch);
  * @str:	string to write (note that \n is not appended)
  */
 void os_puts(const char *str);
+
+/**
+ * os_flush() - flush controlling OS terminal
+ *
+ * This bypasses the U-Boot console support and flushes directly the OS
+ * stdout file descriptor.
+ */
+void os_flush(void);
 
 /**
  * os_write_ram_buf() - write the sandbox RAM buffer to a existing file

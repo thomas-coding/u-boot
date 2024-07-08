@@ -5,7 +5,6 @@
 #ifndef _FS_H
 #define _FS_H
 
-#include <common.h>
 #include <rtc.h>
 
 struct cmd_tbl;
@@ -46,7 +45,7 @@ int do_fat_fsload(struct cmd_tbl *cmdtp, int flag, int argc,
 int do_ext2load(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
 
 /*
- * Tell the fs layer which block device an partition to use for future
+ * Tell the fs layer which block device and partition to use for future
  * commands. This also internally identifies the filesystem that is present
  * within the partition. The identification process may be limited to a
  * specific filesystem type by passing FS_* in the fstype parameter.
@@ -174,6 +173,8 @@ int fs_write(const char *filename, ulong addr, loff_t offset, loff_t len,
 #define FS_DT_REG  8         /* regular file */
 #define FS_DT_LNK  10        /* symbolic link */
 
+#define FS_DIRENT_NAME_LEN 256
+
 /**
  * struct fs_dirent - directory entry
  *
@@ -194,7 +195,7 @@ struct fs_dirent {
 	/** change_time:	time of last modification */
 	struct rtc_time change_time;
 	/** name:		file name */
-	char name[256];
+	char name[FS_DIRENT_NAME_LEN];
 };
 
 /* Note: fs_dir_stream should be treated as opaque to the user of fs layer */
@@ -297,5 +298,43 @@ int do_fs_type(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[]);
  * Return: result (see enum command_ret_t)
  */
 int do_fs_types(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[]);
+
+/**
+ * fs_read_alloc() - Allocate space for a file and read it
+ *
+ * You must call fs_set_blk_dev() or a similar function before calling this,
+ * since that sets up the block device to use.
+ *
+ * The file is terminated with a nul character
+ *
+ * @fname: Filename to read
+ * @size: Size of file to read (must be correct!)
+ * @align: Alignment to use for memory allocation (0 for default)
+ * @bufp: On success, returns the allocated buffer with the nul-terminated file
+ *	in it
+ * Return: 0 if OK, -ENOMEM if out of memory, -EIO if read failed
+ */
+int fs_read_alloc(const char *fname, ulong size, uint align, void **bufp);
+
+/**
+ * fs_load_alloc() - Load a file into allocated space
+ *
+ * The file is terminated with a nul character
+ *
+ * @ifname: Interface name to read from (e.g. "mmc")
+ * @dev_part_str: Device and partition string (e.g. "1:2")
+ * @fname: Filename to read
+ * @max_size: Maximum allowed size for the file (use 0 for 1GB)
+ * @align: Alignment to use for memory allocation (0 for default)
+ * @bufp: On success, returns the allocated buffer with the nul-terminated file
+ *	in it
+ * @sizep: On success, returns the size of the file
+ * Return: 0 if OK, -ENOMEM if out of memory, -ENOENT if the file does not
+ * exist, -ENOMEDIUM if the device does not exist, -E2BIG if the file is too
+ * large (greater than @max_size), -EIO if read failed
+ */
+int fs_load_alloc(const char *ifname, const char *dev_part_str,
+		  const char *fname, ulong max_size, ulong align, void **bufp,
+		  ulong *sizep);
 
 #endif /* _FS_H */

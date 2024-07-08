@@ -11,7 +11,7 @@
  */
 
 /* #define DEBUG */
-#include <common.h>
+#include <config.h>
 #include <log.h>
 #include <linux/delay.h>
 #include <linux/types.h>
@@ -221,13 +221,13 @@ static struct clk ipu_clk = {
 	.usecount = 0,
 };
 
-#if !defined CONFIG_SYS_LDB_CLOCK
-#define CONFIG_SYS_LDB_CLOCK 65000000
+#if !defined CFG_SYS_LDB_CLOCK
+#define CFG_SYS_LDB_CLOCK 65000000
 #endif
 
 static struct clk ldb_clk = {
 	.name = "ldb_clk",
-	.rate = CONFIG_SYS_LDB_CLOCK,
+	.rate = CFG_SYS_LDB_CLOCK,
 	.usecount = 0,
 };
 

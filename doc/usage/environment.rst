@@ -63,8 +63,8 @@ For example, for snapper9260 you would create a text file called
 Example::
 
     stdout=serial
-    #ifdef CONFIG_LCD
-    stdout+=,lcd
+    #ifdef CONFIG_VIDEO
+    stdout+=,vidconsole
     #endif
     bootcmd=
         /* U-Boot script for booting */
@@ -81,6 +81,12 @@ Example::
         echo CONFIG_SYS_BOARD boot failed - please check your image
         echo Load address is CONFIG_SYS_LOAD_ADDR
 
+Settings which are common to a group of boards can use #include to bring in
+a common file in the `include/env` directory, containing environment
+settings. For example::
+
+   #include <env/ti/mmc.env>
+
 If CONFIG_ENV_SOURCE_FILE is empty and the default filename is not present, then
 the old-style C environment is used instead. See below.
 
@@ -89,12 +95,12 @@ Old-style C environment
 
 Traditionally, the default environment is created in `include/env_default.h`,
 and can be augmented by various `CONFIG` defines. See that file for details. In
-particular you can define `CONFIG_EXTRA_ENV_SETTINGS` in your board file
+particular you can define `CFG_EXTRA_ENV_SETTINGS` in your board file
 to add environment variables.
 
 Board maintainers are encouraged to migrate to the text-based environment as it
 is easier to maintain. The distro-board script still requires the old-style
-environment but work is underway to address this.
+environments, so use :doc:`../develop/bootstd` instead.
 
 
 List of environment variables
@@ -105,6 +111,27 @@ many cases the value in the default environment comes from a CONFIG option - see
 `include/env_default.h`) for this.
 
 This is most-likely not complete:
+
+autostart
+    If set to "yes" (actually any string starting with 1, y, Y, t, or T) an
+    image loaded with one of the commands listed below will be automatically
+    started by internally invoking the bootm command.
+
+    * bootelf - Boot from an ELF image in memory
+    * bootp - boot image via network using BOOTP/TFTP protocol
+    * dhcp - boot image via network using DHCP/TFTP protocol
+    * diskboot - boot from ide device
+    * nboot - boot from NAND device
+    * nfs - boot image via network using NFS protocol
+    * rarpboot - boot image via network using RARP/TFTP protocol
+    * scsiboot - boot from SCSI device
+    * tftpboot - boot image via network using TFTP protocol
+    * usbboot - boot from USB device
+
+    If the environment variable autostart is not set to a value starting with
+    1, y, Y, t, or T, an image passed to the "bootm" command will be copied to
+    the load address (and eventually uncompressed), but NOT be started.
+    This can be used to load and uncompress arbitrary data.
 
 baudrate
     Used to set the baudrate of the UART - it defaults to CONFIG_BAUDRATE (which
@@ -141,7 +168,7 @@ bootm_low
     for use by the bootm command. See also "bootm_size"
     environment variable. Address defined by "bootm_low" is
     also the base of the initial memory mapping for the Linux
-    kernel -- see the description of CONFIG_SYS_BOOTMAPSZ and
+    kernel -- see the description of CFG_SYS_BOOTMAPSZ and
     bootm_mapsize.
 
 bootm_mapsize
@@ -149,7 +176,7 @@ bootm_mapsize
     This variable is given as a hexadecimal number and it
     defines the size of the memory region starting at base
     address bootm_low that is accessible by the Linux kernel
-    during early boot.  If unset, CONFIG_SYS_BOOTMAPSZ is used
+    during early boot.  If unset, CFG_SYS_BOOTMAPSZ is used
     as the default value if it is defined, and bootm_size is
     used otherwise.
 
@@ -163,6 +190,10 @@ bootm_size
 bootstopkeysha256, bootdelaykey, bootstopkey
     See README.autoboot
 
+button_cmd_0, button_cmd_0_name ... button_cmd_N, button_cmd_N_name
+    Used to map commands to run when a button is held during boot.
+    See CONFIG_BUTTON_CMD.
+
 updatefile
     Location of the software update file on a TFTP server, used
     by the automatic software update feature. Please refer to
@@ -173,19 +204,6 @@ autoload
     "bootp" and "dhcp" will just load perform a lookup of the
     configuration from the BOOTP server, but not try to
     load any image.
-
-autostart
-    if set to "yes", an image loaded using the "bootp", "dhcp",
-    "rarpboot", "tftpboot" or "diskboot" commands will
-    be automatically started (by internally calling
-    "bootm")
-
-    If unset, or set to "1"/"yes"/"true" (case insensitive, just the first
-    character is enough), a standalone image
-    passed to the "bootm" command will be copied to the load address
-    (and eventually uncompressed), but NOT be started.
-    This can be used to load and uncompress arbitrary
-    data.
 
 fdt_high
     if set this restricts the maximum address that the
@@ -202,9 +220,11 @@ fdt_high
     0xffffffffffffffff (64-bit machines) then
     the fdt will not be copied at all on boot.  For this
     to work it must reside in writable memory, have
-    sufficient padding on the end of it for u-boot to
+    sufficient padding on the end of it for U-Boot to
     add the information it needs into it, and the memory
-    must be accessible by the kernel.
+    must be accessible by the kernel. This usage is strongly discouraged
+    however as it also stops U-Boot from ensuring the device tree starting
+    address is properly aligned and a misaligned tree will cause OS failures.
 
 fdtcontroladdr
     if set this is the address of the control flattened
@@ -218,7 +238,7 @@ initrd_high
     is usually what you want since it allows for
     maximum initrd size. If for some reason you want to
     make sure that the initrd image is loaded below the
-    CONFIG_SYS_BOOTMAPSZ limit, you can set this environment
+    CFG_SYS_BOOTMAPSZ limit, you can set this environment
     variable to a value of "no" or "off" or "0".
     Alternatively, you can set it to a maximum upper
     address to use (U-Boot will still check that it
@@ -240,14 +260,21 @@ initrd_high
     memory. In this case U-Boot will NOT COPY the
     ramdisk at all. This may be useful to reduce the
     boot time on your system, but requires that this
-    feature is supported by your Linux kernel.
+    feature is supported by your Linux kernel. This usage however requires
+    that the user ensure that there will be no overlap with other parts of the
+    image such as the Linux kernel BSS. It should not be enabled by default
+    and only done as part of optimizing a deployment.
 
 ipaddr
     IP address; needed for tftpboot command
 
 loadaddr
     Default load address for commands like "bootp",
-    "rarpboot", "tftpboot", "loadb" or "diskboot"
+    "rarpboot", "tftpboot", "loadb" or "diskboot".  Note that the optimal
+    default values here will vary between architectures.  On 32bit ARM for
+    example, some offset from start of memory is used as the Linux kernel
+    zImage has a self decompressor and it's best if we stay out of where that
+    will be working.
 
 loads_echo
     see CONFIG_LOADS_ECHO
@@ -282,6 +309,10 @@ ethrotate
     It just stays at the currently selected interface. When unset or set to
     anything other than "no", U-Boot does go through all
     available network interfaces.
+
+httpdstp
+    If this is set, the value is used for HTTP's TCP
+    destination port instead of the default port 80.
 
 netretry
     When set to "no" each network operation will
@@ -335,6 +366,19 @@ tftpwindowsize
     This means the count of blocks we can receive before
     sending ack to server.
 
+usb_ignorelist
+    Ignore USB devices to prevent binding them to an USB device driver. This can
+    be used to ignore devices are for some reason undesirable or causes crashes
+    u-boot's USB stack.
+    An example for undesired behavior is the keyboard emulation of security keys
+    like Yubikeys. U-boot currently supports only a single USB keyboard device
+    so try to probe an useful keyboard device. The default environment blocks
+    Yubico devices as common devices emulating keyboards.
+    Devices are matched by idVendor and idProduct. The variable contains a comma
+    separated list of idVendor:idProduct pairs as hexadecimal numbers joined
+    by a colon. '*' functions as a wildcard for idProduct to block all devices
+    with the specified idVendor.
+
 vlan
     When set to a value < 4095 the traffic over
     Ethernet is encapsulated/received over 802.1q
@@ -347,7 +391,7 @@ bootpretryperiod
     Unsigned value, in milliseconds. If not set, the period will
     be either the default (28000), or a value based on
     CONFIG_NET_RETRY_COUNT, if defined. This value has
-    precedence over the valu based on CONFIG_NET_RETRY_COUNT.
+    precedence over the value based on CONFIG_NET_RETRY_COUNT.
 
 memmatches
     Number of matches found by the last 'ms' command, in hex
@@ -390,12 +434,61 @@ in U-Boot code.
 ================= ============== ================ ==============
 Image             File Name      RAM Address      Flash Location
 ================= ============== ================ ==============
-u-boot            u-boot         u-boot_addr_r    u-boot_addr
 Linux kernel      bootfile       kernel_addr_r    kernel_addr
 device tree blob  fdtfile        fdt_addr_r       fdt_addr
 ramdisk           ramdiskfile    ramdisk_addr_r   ramdisk_addr
 ================= ============== ================ ==============
 
+When setting the RAM addresses for `kernel_addr_r`, `fdt_addr_r` and
+`ramdisk_addr_r` there are several types of constraints to keep in mind. The
+one type of constraint is payload requirement. For example, a device tree MUST
+be loaded at an 8-byte aligned address as that is what the specification
+requires. In a similar manner, the operating system may define restrictions on
+where in memory space payloads can be. This is documented for example in Linux,
+with both the `Booting ARM Linux`_ and `Booting AArch64 Linux`_ documents.
+Finally, there are practical constraints. We do not know the size of a given
+payload a user will use but each payload must not overlap or it will corrupt
+the other payload. A similar problem can happen when a payload ends up being in
+the OS BSS area. For these reasons we need to ensure our default values here
+are both unlikely to lead to failure to boot and sufficiently explained so that
+they can be optimized for boot time or adjusted for smaller memory
+configurations.
+
+On different architectures we will have different constraints. It is important
+that we follow whatever documented requirements are available to best ensure
+forward compatibility. What follows are examples to highlight how to provide
+reasonable default values in different cases.
+
+Texas Instruments OMAP2PLUS (ARMv7) example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On these families of processors we are on a 32bit ARMv7 core.  As booting some
+form of Linux is our most common payload we will also keep in mind the
+documented requirements for booting that Linux provides.  These values are also
+known to be fine for booting a number of other operating systems (or their
+loaders).  In this example we define the following variables and values::
+
+    loadaddr=0x82000000
+    kernel_addr_r=${loadaddr}
+    fdt_addr_r=0x88000000
+    ramdisk_addr_r=0x88080000
+    bootm_size=0x10000000
+
+The first thing to keep in mind is that DRAM starts at 0x80000000. We set a
+32MiB buffer from the start of memory as our default load address and set
+``kernel_addr_r`` to that. This is because the Linux ``zImage`` decompressor
+will typically then be able to avoid doing a relocation itself. It also MUST be
+within the first 128MiB of memory. The next value is we set ``fdt_addr_r`` to
+be at 128MiB offset from the start of memory. This location is suggested by the
+kernel documentation and is exceedingly unlikely to be overwritten by the
+kernel itself given other architectural constraints.  We then allow for the
+device tree to be up to 512KiB in size before placing the ramdisk in memory. We
+then say that everything should be within the first 256MiB of memory so that
+U-Boot can relocate things as needed to ensure proper alignment. We pick 256MiB
+as our value here because we know there are very few platforms on in this
+family with less memory. It could be as high as 768MiB and still ensure that
+everything would be visible to the kernel, but again we go with what we assume
+is the safest assumption.
 
 Automatically updated variables
 -------------------------------
@@ -464,3 +557,6 @@ Implementation
 --------------
 
 See :doc:`../develop/environment` for internal development details.
+
+.. _`Booting ARM Linux`: https://www.kernel.org/doc/html/latest/arm/booting.html
+.. _`Booting AArch64 Linux`: https://www.kernel.org/doc/html/latest/arm64/booting.html

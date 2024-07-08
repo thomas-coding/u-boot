@@ -11,7 +11,6 @@
 
 #define LOG_CATEGORY	LOGC_BOOT
 
-#include <common.h>
 #include <bootstage.h>
 #include <hang.h>
 #include <log.h>
@@ -137,7 +136,7 @@ ulong bootstage_add_record(enum bootstage_id id, const char *name,
 			rec->flags = flags;
 			rec->id = id;
 		} else {
-			log_warning("Bootstage space exhasuted\n");
+			log_warning("Bootstage space exhausted\n");
 		}
 	}
 
@@ -147,15 +146,9 @@ ulong bootstage_add_record(enum bootstage_id id, const char *name,
 	return mark;
 }
 
-
-ulong bootstage_mark(enum bootstage_id id)
+ulong bootstage_error_name(enum bootstage_id id, const char *name)
 {
-	return bootstage_add_record(id, NULL, 0, timer_get_boot_us());
-}
-
-ulong bootstage_error(enum bootstage_id id)
-{
-	return bootstage_add_record(id, NULL, BOOTSTAGEF_ERROR,
+	return bootstage_add_record(id, name, BOOTSTAGEF_ERROR,
 				    timer_get_boot_us());
 }
 
@@ -506,6 +499,20 @@ int bootstage_unstash(const void *base, int size)
 	debug("Unstashed %d records\n", hdr->count);
 
 	return 0;
+}
+
+int _bootstage_stash_default(void)
+{
+	return bootstage_stash(map_sysmem(CONFIG_BOOTSTAGE_STASH_ADDR, 0),
+			       CONFIG_BOOTSTAGE_STASH_SIZE);
+}
+
+int _bootstage_unstash_default(void)
+{
+	const void *stash = map_sysmem(CONFIG_BOOTSTAGE_STASH_ADDR,
+				       CONFIG_BOOTSTAGE_STASH_SIZE);
+
+	return bootstage_unstash(stash, CONFIG_BOOTSTAGE_STASH_SIZE);
 }
 
 int bootstage_get_size(void)

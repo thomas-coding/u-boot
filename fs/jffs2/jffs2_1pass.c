@@ -111,9 +111,7 @@
  */
 
 
-#include <common.h>
 #include <config.h>
-#include <flash.h>
 #include <malloc.h>
 #include <div64.h>
 #include <linux/compiler.h>
@@ -381,6 +379,8 @@ static void put_fl_mem_onenand(void *buf)
 
 
 #if defined(CONFIG_CMD_FLASH)
+#include <flash.h>
+
 /*
  * Support for jffs2 on top of NOR-flash
  *
@@ -392,7 +392,6 @@ static inline void *get_fl_mem_nor(u32 off, u32 size, void *ext_buf)
 	u32 addr = off;
 	struct mtdids *id = current_part->dev->id;
 
-	extern flash_info_t flash_info[];
 	flash_info_t *flash = &flash_info[id->num];
 
 	addr += flash->start[0];
@@ -1523,7 +1522,7 @@ jffs2_1pass_build_lists(struct part_info * part)
 
 		/* Set buf_size to maximum length */
 		buf_size = DEFAULT_EMPTY_SCAN_SIZE;
-		WATCHDOG_RESET();
+		schedule();
 
 #ifdef CONFIG_JFFS2_SUMMARY
 		buf_len = sizeof(*sm);

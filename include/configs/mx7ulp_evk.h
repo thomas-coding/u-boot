@@ -11,29 +11,23 @@
 #include <linux/sizes.h>
 #include <asm/arch/imx-regs.h>
 
-#define CONFIG_SYS_BOOTM_LEN		0x1000000
-
-
 /* Using ULP WDOG for reset */
 #define WDOG_BASE_ADDR			WDG1_RBASE
 
-#define CONFIG_SYS_HZ_CLOCK		1000000 /* Fixed at 1Mhz from TSTMR */
+#define CFG_SYS_HZ_CLOCK		1000000 /* Fixed at 1Mhz from TSTMR */
 
 /* UART */
 #define LPUART_BASE			LPUART4_RBASE
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_CBSIZE		512
-
-#define CONFIG_SYS_MAXARGS		256
 
 /* Physical Memory Map */
 
 #define PHYS_SDRAM			0x60000000
 #define PHYS_SDRAM_SIZE			SZ_1G
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
 	"console=ttyLP0\0" \
@@ -97,12 +91,7 @@
 			"bootz; " \
 		"fi;\0" \
 
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	SZ_256K
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	SZ_256K
 
 #endif	/* __CONFIG_H */

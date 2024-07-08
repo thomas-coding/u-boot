@@ -11,7 +11,6 @@
  *   Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
  */
 
-#include <common.h>
 #include <clk.h>
 #include <dm.h>
 #include <i2c.h>
@@ -369,6 +368,7 @@ static const struct dm_i2c_ops rcar_i2c_ops = {
 static const struct udevice_id rcar_i2c_ids[] = {
 	{ .compatible = "renesas,rcar-gen2-i2c", .data = RCAR_I2C_TYPE_GEN2 },
 	{ .compatible = "renesas,rcar-gen3-i2c", .data = RCAR_I2C_TYPE_GEN3 },
+	{ .compatible = "renesas,rcar-gen4-i2c", .data = RCAR_I2C_TYPE_GEN3 },
 	{ }
 };
 

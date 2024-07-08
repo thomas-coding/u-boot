@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2018 Marek Behun <marek.behun@nic.cz>
+ * Copyright (C) 2018 Marek Behún <kabel@kernel.org>
  */
 
-#include <common.h>
+#include <config.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/soc.h>
 #include <net.h>
@@ -15,6 +15,8 @@
 #include <dm.h>
 #include <dm/of_extra.h>
 #include <env.h>
+#include <env_internal.h>
+#include <event.h>
 #include <fdt_support.h>
 #include <init.h>
 #include <led.h>
@@ -23,6 +25,7 @@
 #include <linux/string.h>
 #include <miiphy.h>
 #include <spi.h>
+#include <spi_flash.h>
 
 #include "mox_sp.h"
 
@@ -43,6 +46,26 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+int board_fit_config_name_match(const char *name)
+{
+	if (!gd->board_type) {
+		enum cznic_a3720_board board;
+
+		if (mbox_sp_get_board_info(NULL, NULL, NULL, NULL, NULL,
+					   &board) < 0) {
+			printf("Cannot determine board, defaulting to Turris MOX!\n");
+			board = BOARD_TURRIS_MOX;
+		}
+
+		gd->board_type = board;
+	}
+
+	return !((gd->board_type == BOARD_TURRIS_MOX &&
+		  !strcmp(name, "armada-3720-turris-mox")) ||
+		 (gd->board_type == BOARD_RIPE_ATLAS &&
+		  !strcmp(name, "armada-3720-ripe-atlas")));
+}
+
 #if defined(CONFIG_OF_BOARD_FIXUP)
 int board_fix_fdt(void *blob)
 {
@@ -50,6 +73,9 @@ int board_fix_fdt(void *blob)
 	u8 topology[MAX_MOX_MODULES];
 	int i, size, ret;
 	bool eth1_sgmii;
+
+	if (gd->board_type != BOARD_TURRIS_MOX)
+		return 0;
 
 	/*
 	 * SPI driver is not loaded in driver model yet, but we have to find out
@@ -138,7 +164,7 @@ int board_fix_fdt(void *blob)
 int board_init(void)
 {
 	/* address of boot parameters */
-	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+	gd->bd->bi_boot_params = CFG_SYS_SDRAM_BASE + 0x100;
 
 	return 0;
 }
@@ -149,9 +175,9 @@ static int mox_do_spi(u8 *in, u8 *out, size_t size)
 	struct udevice *dev;
 	int ret;
 
-	ret = spi_get_bus_and_cs(0, 1, 1000000, SPI_CPHA | SPI_CPOL,
-				 "spi_generic_drv", "moxtet@1", &dev,
-				 &slave);
+	ret = _spi_get_bus_and_cs(0, 1, 1000000, SPI_CPHA | SPI_CPOL,
+				  "spi_generic_drv", "moxtet@1", &dev,
+				  &slave);
 	if (ret)
 		goto fail;
 
@@ -339,23 +365,83 @@ static int get_reset_gpio(struct gpio_desc *reset_gpio)
 	return 0;
 }
 
+/* Load default system DTB binary to $fdr_addr */
+static void load_spi_dtb(void)
+{
+	const char *const env_name[1] = { "fdt_addr" };
+	unsigned long size, offset;
+	struct udevice *spi_dev;
+	struct spi_flash *flash;
+	const char *addr_str;
+	unsigned long addr;
+	void *buf;
+
+	addr_str = env_get(env_name[0]);
+	if (!addr_str) {
+		env_set_default_vars(1, (char * const *)env_name, 0);
+		addr_str = env_get(env_name[0]);
+	}
+
+	if (!addr_str)
+		return;
+
+	addr = hextoul(addr_str, NULL);
+	if (!addr)
+		return;
+
+	spi_flash_probe_bus_cs(CONFIG_SF_DEFAULT_BUS, CONFIG_SF_DEFAULT_CS, &spi_dev);
+	flash = dev_get_uclass_priv(spi_dev);
+	if (!flash)
+		return;
+
+	/*
+	 * SPI NOR "dtb" partition offset & size hardcoded for now because the
+	 * mtd subsystem does not offer finding the partition yet and we do not
+	 * want to reimplement OF partition parser here.
+	 */
+	offset = 0x7f0000;
+	size = 0x10000;
+
+	buf = map_physmem(addr, size, MAP_WRBACK);
+	if (!buf)
+		return;
+
+	spi_flash_read(flash, offset, size, buf);
+	unmap_physmem(buf, size);
+}
+
 int misc_init_r(void)
 {
+	int i, ret, addrcnt;
 	u8 mac[2][6];
-	int i, ret;
 
-	ret = mbox_sp_get_board_info(NULL, mac[0], mac[1], NULL, NULL);
+	ret = mbox_sp_get_board_info(NULL, mac[0], mac[1], NULL, NULL, NULL);
 	if (ret < 0) {
 		printf("Cannot read data from OTP!\n");
 		return 0;
 	}
 
-	for (i = 0; i < 2; ++i) {
+	if (gd->board_type == BOARD_TURRIS_MOX)
+		addrcnt = 2;
+	else if (gd->board_type == BOARD_RIPE_ATLAS)
+		addrcnt = 1;
+	else
+		addrcnt = 0;
+
+	for (i = 0; i < addrcnt; ++i) {
 		u8 oldmac[6];
 
 		if (is_valid_ethaddr(mac[i]) &&
 		    !eth_env_get_enetaddr_by_index("eth", i, oldmac))
 			eth_env_set_enetaddr_by_index("eth", i, mac[i]);
+	}
+
+	if (gd->board_type == BOARD_RIPE_ATLAS) {
+		env_set("board", "ripe_atlas");
+		env_set("board_name", "ripe_atlas");
+		env_set("fdtfile", "marvell/armada-3720-ripe-atlas.dtb");
+	} else {
+		load_spi_dtb();
 	}
 
 	return 0;
@@ -440,8 +526,9 @@ static void handle_reset_button(void)
 	env_set_default_vars(1, (char * const *)vars, 0);
 
 	if (read_reset_button()) {
-		const char * const vars[2] = {
+		const char * const vars[3] = {
 			"bootcmd",
+			"bootdelay",
 			"distro_bootcmd",
 		};
 
@@ -449,7 +536,7 @@ static void handle_reset_button(void)
 		 * Set the above envs to their default values, in case the user
 		 * managed to break them.
 		 */
-		env_set_default_vars(2, (char * const *)vars, 0);
+		env_set_default_vars(3, (char * const *)vars, 0);
 
 		/* Ensure bootcmd_rescue is used by distroboot */
 		env_set("boot_targets", "rescue");
@@ -475,17 +562,15 @@ static void handle_reset_button(void)
 	}
 }
 
-int show_board_info(void)
+int checkboard(void)
 {
 	int i, ret, board_version, ram_size, is_sd;
 	const char *pub_key;
 	const u8 *topology;
 	u64 serial_number;
 
-	printf("Model: CZ.NIC Turris Mox Board\n");
-
 	ret = mbox_sp_get_board_info(&serial_number, NULL, NULL, &board_version,
-				     &ram_size);
+				     &ram_size, NULL);
 	if (ret < 0) {
 		printf("  Cannot read board info: %i\n", ret);
 	} else {
@@ -499,6 +584,9 @@ int show_board_info(void)
 		printf("  ECDSA Public Key: %s\n", pub_key);
 	else
 		printf("  Cannot read ECDSA Public Key\n");
+
+	if (gd->board_type != BOARD_TURRIS_MOX)
+		return 0;
 
 	ret = mox_get_topology(&topology, &module_count, &is_sd);
 	if (ret)
@@ -618,9 +706,23 @@ err:
 	return NULL;
 }
 
-int last_stage_init(void)
+enum env_location env_get_location(enum env_operation op, int prio)
+{
+	if (prio > 0)
+		return ENVL_UNKNOWN;
+
+	if (gd->board_type == BOARD_RIPE_ATLAS)
+		return ENVL_MMC;
+
+	return ENVL_SPI_FLASH;
+}
+
+static int last_stage_init(void)
 {
 	struct gpio_desc reset_gpio = {};
+
+	if (gd->board_type != BOARD_TURRIS_MOX)
+		return 0;
 
 	/* configure modules */
 	if (get_reset_gpio(&reset_gpio) < 0)
@@ -663,6 +765,7 @@ handle_reset_btn:
 
 	return 0;
 }
+EVENT_SPY_SIMPLE(EVT_LAST_STAGE_INIT, last_stage_init);
 
 #if defined(CONFIG_OF_BOARD_SETUP)
 
@@ -750,6 +853,9 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	int res;
 
+	if (gd->board_type != BOARD_TURRIS_MOX)
+		return 0;
+
 	/*
 	 * If MOX B (PCI), MOX F (USB) or MOX G (Passthrough PCI) modules are
 	 * connected, enable the PCIe node.
@@ -819,6 +925,11 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 
 			res = fdt_setprop_string(blob, node, "phy-mode",
 						 "sgmii");
+			if (res < 0)
+				return res;
+
+			res = fdt_setprop_string(blob, node, "label",
+						 "sfp");
 			if (res < 0)
 				return res;
 		}

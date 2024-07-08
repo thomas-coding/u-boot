@@ -13,17 +13,10 @@
 #include "tegra124-common.h"
 
 /* Board-specific serial config */
-#define CONFIG_TEGRA_ENABLE_UARTA
-#define CONFIG_SYS_NS16550_COM1		NV_PA_APB_UARTA_BASE
+#define CFG_SYS_NS16550_COM1		NV_PA_APB_UARTA_BASE
 
 #define FDT_MODULE			"apalis-v1.2"
 #define FDT_MODULE_V1_0			"apalis"
-
-/* PCI host support */
-#undef CONFIG_PCI_SCAN_SHOW
-
-/* PCI networking support */
-#define CONFIG_E1000_NO_NVM
 
 /*
  * Custom Distro Boot configuration:
@@ -38,12 +31,6 @@
 	func(USB, usb, 0) \
 	func(PXE, pxe, na) \
 	func(DHCP, dhcp, na)
-
-#undef CONFIG_IPADDR
-#define CONFIG_IPADDR		192.168.10.2
-#define CONFIG_NETMASK		255.255.255.0
-#undef CONFIG_SERVERIP
-#define CONFIG_SERVERIP		192.168.10.1
 
 #define DFU_ALT_EMMC_INFO	"apalis-tk1.img raw 0x0 0x500 mmcpart 1; " \
 				"boot part 0 1 mmcpart 0; " \
@@ -88,18 +75,6 @@
 		"load ${interface} ${drive}:1 ${loadaddr} flash_blk.img && " \
 		"source ${loadaddr}\0" \
 	"vidargs=fbcon=map:1\0"
-
-/* Increase console I/O buffer size */
-#undef CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_CBSIZE		1024
-
-/* Increase arguments buffer size */
-#undef CONFIG_SYS_BARGSIZE
-#define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE
-
-/* Increase maximum number of arguments */
-#undef CONFIG_SYS_MAXARGS
-#define CONFIG_SYS_MAXARGS		32
 
 #include "tegra-common-post.h"
 

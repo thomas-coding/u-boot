@@ -14,19 +14,16 @@
 /* NAND support */
 
 #ifdef CONFIG_CMD_NAND
-#define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_SYS_NAND_BASE		NFC_BASE_ADDR
+#define CFG_SYS_NAND_BASE		NFC_BASE_ADDR
 
 /* Dynamic MTD partition support */
 #endif
 
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
-#define CONFIG_SYS_FSL_ESDHC_NUM	1
+#define CFG_SYS_FSL_ESDHC_ADDR	0
 
-#define CONFIG_FEC_MXC_PHYADDR          0
+#define CFG_FEC_MXC_PHYADDR          0
 
 /* I2C Configs */
-#define CONFIG_SYS_SPD_BUS_NUM		0
 
 /*
  * We do have 128MB of memory on the Vybrid Tower board. Leave the last
@@ -47,7 +44,7 @@
 	"rdaddr=0x84080000\0" \
 	"ramdisk_addr_r=0x84080000\0"
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	MEM_LAYOUT_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
@@ -126,17 +123,8 @@
 #define PHYS_SDRAM			(0x80000000)
 #define PHYS_SDRAM_SIZE			(128 * 1024 * 1024)
 
-#define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
-#define CONFIG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
-#define CONFIG_SYS_INIT_RAM_SIZE	IRAM_SIZE
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-#ifdef CONFIG_ENV_IS_IN_NAND
-#define CONFIG_ENV_RANGE		(512 * 1024)
-#endif
+#define CFG_SYS_SDRAM_BASE		PHYS_SDRAM
+#define CFG_SYS_INIT_RAM_ADDR	IRAM_BASE_ADDR
+#define CFG_SYS_INIT_RAM_SIZE	IRAM_SIZE
 
 #endif

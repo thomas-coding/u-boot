@@ -10,7 +10,6 @@
 
 #ifndef HWCONFIG_TEST
 #include <config.h>
-#include <common.h>
 #include <env.h>
 #include <exports.h>
 #include <hwconfig.h>
@@ -78,7 +77,7 @@ static const char *__hwconfig(const char *opt, size_t *arglen,
 
 	/* if we are passed a buffer use it, otherwise try the environment */
 	if (!env_hwconfig) {
-		if (!(gd->flags & GD_FLG_ENV_READY)) {
+		if (!(gd->flags & GD_FLG_ENV_READY) && gd->env_valid != ENV_VALID) {
 			printf("WARNING: Calling __hwconfig without a buffer "
 					"and before environment is ready\n");
 			return NULL;

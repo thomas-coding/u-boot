@@ -5,7 +5,6 @@
  * Copyright (C) 2021, Bin Meng <bmeng.cn@gmail.com>
  */
 
-#include <common.h>
 #include <console.h>
 #include <test/suites.h>
 #include <test/ut.h>
@@ -29,9 +28,8 @@ ADDRMAP_TEST(addrmap_test_basic, UT_TESTF_CONSOLE_REC);
 
 int do_ut_addrmap(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
-	struct unit_test *tests = ll_entry_start(struct unit_test,
-						 addrmap_test);
-	const int n_ents = ll_entry_count(struct unit_test, addrmap_test);
+	struct unit_test *tests = UNIT_TEST_SUITE_START(addrmap_test);
+	const int n_ents = UNIT_TEST_SUITE_COUNT(addrmap_test);
 
 	return cmd_ut_category("cmd_addrmap", "cmd_addrmap_", tests, n_ents,
 			       argc, argv);

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2018 Marek Behun <marek.behun@nic.cz>
+ * Copyright (C) 2018 Marek Behún <kabel@kernel.org>
  * Copyright (C) 2021 Pali Rohár <pali@kernel.org>
  */
 
-#include <common.h>
 #include <asm/arch/soc.h>
 #include <asm/io.h>
 #include <linux/bitops.h>
 #include <linux/delay.h>
+#include <linux/errno.h>
 #include <mach/mbox.h>
 
 #define RWTM_BASE		(MVEBU_REGISTER(0xb0000))

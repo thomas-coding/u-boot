@@ -18,7 +18,6 @@
  * 2. Support Polarity Inversion
  */
 
-#include <common.h>
 #include <errno.h>
 #include <dm.h>
 #include <fdtdec.h>
@@ -43,6 +42,8 @@
 
 #define PCA_GPIO_MASK           0x00FF
 #define PCA_INT                 0x0100
+#define PCA_PCAL		BIT(9)
+#define PCA_LATCH_INT		(PCA_PCAL | PCA_INT)
 #define PCA953X_TYPE            0x1000
 #define PCA957X_TYPE            0x2000
 #define PCA_TYPE_MASK           0xF000
@@ -393,6 +394,8 @@ static const struct udevice_id pca953x_ids[] = {
 	{ .compatible = "nxp,pca9575", .data = OF_957X(16, PCA_INT), },
 	{ .compatible = "nxp,pca9698", .data = OF_953X(40, 0), },
 
+	{ .compatible = "nxp,pcal6524", .data = OF_953X(24, PCA_LATCH_INT), },
+
 	{ .compatible = "maxim,max7310", .data = OF_953X(8, 0), },
 	{ .compatible = "maxim,max7312", .data = OF_953X(16, PCA_INT), },
 	{ .compatible = "maxim,max7313", .data = OF_953X(16, PCA_INT), },
@@ -403,6 +406,7 @@ static const struct udevice_id pca953x_ids[] = {
 	{ .compatible = "ti,tca6416", .data = OF_953X(16, PCA_INT), },
 	{ .compatible = "ti,tca6424", .data = OF_953X(24, PCA_INT), },
 	{ .compatible = "ti,tca9539", .data = OF_953X(16, PCA_INT), },
+	{ .compatible = "ti,tca9554", .data = OF_953X(8, PCA_INT), },
 
 	{ .compatible = "onsemi,pca9654", .data = OF_953X(8, PCA_INT), },
 

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2020-2021 Linaro Limited
+ * Copyright (C) 2020-2022 Linaro Limited
  */
 
 #define LOG_CATEGORY UCLASS_REGULATOR
 
-#include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <scmi_agent.h>
@@ -42,11 +41,7 @@ static int scmi_voltd_set_enable(struct udevice *dev, bool enable)
 	if (ret)
 		return ret;
 
-	ret = scmi_to_linux_errno(out.status);
-	if (ret)
-		return ret;
-
-	return ret;
+	return scmi_to_linux_errno(out.status);
 }
 
 static int scmi_voltd_get_enable(struct udevice *dev)
@@ -143,6 +138,10 @@ static int scmi_regulator_probe(struct udevice *dev)
 		.out_msg_sz = sizeof(out),
 	};
 	int ret;
+
+	ret = devm_scmi_of_get_channel(dev);
+	if (ret)
+		return ret;
 
 	/* Check voltage domain is known from SCMI server */
 	in.domain_id = pdata->domain_id;

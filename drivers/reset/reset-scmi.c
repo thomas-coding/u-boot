@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2019-2020 Linaro Limited
+ * Copyright (C) 2019-2022 Linaro Limited
  */
 
 #define LOG_CATEGORY UCLASS_RESET
 
-#include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <reset-uclass.h>
@@ -71,8 +70,14 @@ static const struct reset_ops scmi_reset_domain_ops = {
 	.rst_deassert	= scmi_reset_deassert,
 };
 
+static int scmi_reset_probe(struct udevice *dev)
+{
+	return devm_scmi_of_get_channel(dev);
+}
+
 U_BOOT_DRIVER(scmi_reset_domain) = {
 	.name = "scmi_reset_domain",
 	.id = UCLASS_RESET,
 	.ops = &scmi_reset_domain_ops,
+	.probe = scmi_reset_probe,
 };

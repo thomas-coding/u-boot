@@ -131,7 +131,36 @@ An attached disk can be emulated in RISC-V virt machine by adding::
     -drive if=none,file=riscv64.img,format=raw,id=mydisk \
     -device ide-hd,drive=mydisk,bus=ahci.0
 
-You will have to run 'scsi scan' to use it.
+or alternatively attach an emulated UFS::
+
+    -device ufs,id=ufs0 \
+    -drive if=none,file=test.img,format=raw,id=lun0 \
+    -device ufs-lu,drive=lun0,bus=ufs0
+
+You will have to run 'scsi scan' to use them.
+
+A video console can be emulated in RISC-V virt machine by removing "-nographic"
+and adding::
+
+    -serial stdio -device VGA
+
+In addition, a usb keyboard can be attached to an emulated xHCI controller in
+RISC-V virt machine as an option of input devices by adding::
+
+    -device qemu-xhci,id=xhci -device usb-kbd,bus=xhci.0
+
+Running with KVM
+----------------
+
+Running with QEMU using KVM requires an S-mode U-Boot binary as created by
+qemu-riscv64_smode_defconfig.
+
+Provide the U-Boot S-mode ELF image as *-kernel* parameter and do not add a
+*-bios* parameter, e.g.
+
+.. code-block:: bash
+
+    qemu-system-riscv64 -accel kvm -nographic -machine virt -kernel u-boot
 
 Debug UART
 ----------

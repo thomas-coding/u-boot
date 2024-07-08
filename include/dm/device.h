@@ -11,6 +11,7 @@
 #define _DM_DEVICE_H
 
 #include <dm/ofnode.h>
+#include <dm/tag.h>
 #include <dm/uclass-id.h>
 #include <fdtdec.h>
 #include <linker_lists.h>
@@ -164,6 +165,7 @@ enum {
  *		automatically when the device is removed / unbound
  * @dma_offset: Offset between the physical address space (CPU's) and the
  *		device's bus address space
+ * @iommu: IOMMU device associated with this device
  */
 struct udevice {
 	const struct driver *driver;
@@ -192,6 +194,9 @@ struct udevice {
 #endif
 #if CONFIG_IS_ENABLED(DM_DMA)
 	ulong dma_offset;
+#endif
+#if CONFIG_IS_ENABLED(IOMMU)
+	struct udevice *iommu;
 #endif
 };
 
@@ -252,7 +257,7 @@ static inline void dev_bic_flags(struct udevice *dev, u32 bic)
  * @dev:	device to check
  * Return: reference of the device's DT node
  */
-static inline ofnode dev_ofnode(const struct udevice *dev)
+static inline __attribute_const__ ofnode dev_ofnode(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return dev->node_;
@@ -272,7 +277,7 @@ static inline ofnode dev_ofnode(const struct udevice *dev)
 #define dev_get_dma_offset(_dev)		0
 #endif
 
-static inline int dev_of_offset(const struct udevice *dev)
+static inline __attribute_const__ int dev_of_offset(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return ofnode_to_offset(dev_ofnode(dev));
@@ -281,7 +286,7 @@ static inline int dev_of_offset(const struct udevice *dev)
 #endif
 }
 
-static inline bool dev_has_ofnode(const struct udevice *dev)
+static inline __attribute_const__ bool dev_has_ofnode(const struct udevice *dev)
 {
 #if CONFIG_IS_ENABLED(OF_REAL)
 	return ofnode_valid(dev_ofnode(dev));
@@ -362,7 +367,7 @@ struct udevice_id {
  * @ops: Driver-specific operations. This is typically a list of function
  * pointers defined by the driver, to implement driver functions required by
  * the uclass.
- * @flags: driver flags - see `DM_FLAGS_...`
+ * @flags: driver flags - see `DM_FLAG_...`
  * @acpi_ops: Advanced Configuration and Power Interface (ACPI) operations,
  * allowing the device to add things to the ACPI tables passed to Linux
  */
@@ -545,6 +550,30 @@ void *dev_get_parent_priv(const struct udevice *dev);
  * Return: private uclass data for this device, or NULL if none
  */
 void *dev_get_uclass_priv(const struct udevice *dev);
+
+/**
+ * dev_get_attach_ptr() - Get the value of an attached pointed tag
+ *
+ * The tag is assumed to hold a pointer, if it exists
+ *
+ * @dev: Device to look at
+ * @tag: Tag to access
+ * @return value of tag, or NULL if there is no tag of this type
+ */
+void *dev_get_attach_ptr(const struct udevice *dev, enum dm_tag_t tag);
+
+/**
+ * dev_get_attach_size() - Get the size of an attached tag
+ *
+ * Core tags have an automatic-allocation mechanism where the allocated size is
+ * defined by the device, parent or uclass. This returns the size associated
+ * with a particular tag
+ *
+ * @dev: Device to look at
+ * @tag: Tag to access
+ * @return size of auto-allocated data, 0 if none
+ */
+int dev_get_attach_size(const struct udevice *dev, enum dm_tag_t tag);
 
 /**
  * dev_get_parent() - Get the parent of a device
@@ -976,7 +1005,8 @@ int dev_enable_by_path(const char *path);
  */
 static inline bool device_is_on_pci_bus(const struct udevice *dev)
 {
-	return dev->parent && device_get_uclass_id(dev->parent) == UCLASS_PCI;
+	return CONFIG_IS_ENABLED(PCI) && dev->parent &&
+		device_get_uclass_id(dev->parent) == UCLASS_PCI;
 }
 
 /**
@@ -1041,7 +1071,7 @@ static inline bool device_is_on_pci_bus(const struct udevice *dev)
  * sub-nodes and binds drivers for each node where a driver can be found.
  *
  * If this is called prior to relocation, only pre-relocation devices will be
- * bound (those marked with u-boot,dm-pre-reloc in the device tree, or where
+ * bound (those marked with bootph-all in the device tree, or where
  * the driver has the DM_FLAG_PRE_RELOC flag set). Otherwise, all devices will
  * be bound.
  *

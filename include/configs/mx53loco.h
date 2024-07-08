@@ -11,26 +11,23 @@
 
 #include <asm/arch/imx-regs.h>
 
-#define CONFIG_MXC_UART_BASE	UART1_BASE
+#define CFG_MXC_UART_BASE	UART1_BASE
 
 /* MMC Configs */
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
-#define CONFIG_SYS_FSL_ESDHC_NUM	2
+#define CFG_SYS_FSL_ESDHC_ADDR	0
 
 /* USB Configs */
-#define CONFIG_MXC_USB_PORT	1
-#define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_MXC_USB_FLAGS	0
+#define CFG_MXC_USB_PORT	1
+#define CFG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
+#define CFG_MXC_USB_FLAGS	0
 
 /* PMIC Controller */
-#define CONFIG_POWER_FSL
-#define CONFIG_POWER_FSL_MC13892
-#define CONFIG_SYS_DIALOG_PMIC_I2C_ADDR	0x48
-#define CONFIG_SYS_FSL_PMIC_I2C_ADDR	0x8
+#define CFG_SYS_DIALOG_PMIC_I2C_ADDR	0x48
+#define CFG_SYS_FSL_PMIC_I2C_ADDR	0x8
 
 /* Command definition */
 
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS \
 	"script=boot.scr\0" \
 	"image=zImage\0" \
 	"fdt_addr=0x71000000\0" \
@@ -88,7 +85,6 @@
 		"fi;\0"
 
 /* Miscellaneous configurable options */
-#define CONFIG_SYS_CBSIZE		512	/* Console I/O Buffer Size */
 
 /* Physical Memory Map */
 #define PHYS_SDRAM_1			CSD0_BASE_ADDR
@@ -97,20 +93,9 @@
 #define PHYS_SDRAM_2_SIZE		(gd->bd->bi_dram[1].size)
 #define PHYS_SDRAM_SIZE			(gd->ram_size)
 
-#define CONFIG_SYS_SDRAM_BASE		(PHYS_SDRAM_1)
-#define CONFIG_SYS_INIT_RAM_ADDR	(IRAM_BASE_ADDR)
-#define CONFIG_SYS_INIT_RAM_SIZE	(IRAM_SIZE)
-
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
-
-#ifdef CONFIG_CMD_SATA
-	#define CONFIG_DWC_AHSATA_PORT_ID       0
-	#define CONFIG_DWC_AHSATA_BASE_ADDR     SATA_BASE_ADDR
-	#define CONFIG_LBA48
-#endif
+#define CFG_SYS_SDRAM_BASE		(PHYS_SDRAM_1)
+#define CFG_SYS_INIT_RAM_ADDR	(IRAM_BASE_ADDR)
+#define CFG_SYS_INIT_RAM_SIZE	(IRAM_SIZE)
 
 /* Framebuffer and LCD */
 

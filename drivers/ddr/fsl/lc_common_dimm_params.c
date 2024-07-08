@@ -4,7 +4,6 @@
  * Copyright 2017-2021 NXP Semiconductor
  */
 
-#include <common.h>
 #include <fsl_ddr_sdram.h>
 #include <log.h>
 #include <asm/bitops.h>
@@ -422,6 +421,9 @@ compute_lowest_common_dimm_parameters(const unsigned int ctrl_num,
 					dimm_params[i].mpart);
 #endif
 			}
+#ifndef CONFIG_SPL_BUILD
+			puts("       ");
+#endif
 		}
 	}
 

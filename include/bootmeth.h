@@ -7,24 +7,58 @@
 #ifndef __bootmeth_h
 #define __bootmeth_h
 
+#include <linux/bitops.h>
+
 struct blk_desc;
 struct bootflow;
 struct bootflow_iter;
 struct udevice;
 
 /**
+ * enum bootmeth_flags - Flags for bootmeths
+ *
+ * @BOOTMETHF_GLOBAL: bootmeth handles bootdev selection automatically
+ * @BOOTMETHF_ANY_PART: bootmeth is willing to check any partition, even if it
+ * has no filesystem
+ */
+enum bootmeth_flags {
+	BOOTMETHF_GLOBAL	= BIT(0),
+	BOOTMETHF_ANY_PART	= BIT(1),
+};
+
+/**
  * struct bootmeth_uc_plat - information the uclass keeps about each bootmeth
  *
  * @desc: A long description of the bootmeth
+ * @flags: Flags for this bootmeth (enum bootmeth_flags)
  */
 struct bootmeth_uc_plat {
 	const char *desc;
+	int flags;
 };
 
 /** struct bootmeth_ops - Operations for boot methods */
 struct bootmeth_ops {
 	/**
-	 * check_supported() - check if a bootmeth supports this bootflow
+	 * get_state_desc() - get detailed state information
+	 *
+	 * Produces a textual description of the state of the boot method. This
+	 * can include newline characters if it extends to multiple lines. It
+	 * must be a nul-terminated string.
+	 *
+	 * This may involve reading state from the system, e.g. some data in
+	 * the firmware area.
+	 *
+	 * @dev:	Bootmethod device to check
+	 * @buf:	Buffer to place the info in (terminator must fit)
+	 * @maxsize:	Size of buffer
+	 * Returns: 0 if OK, -ENOSPC is buffer is too small, other -ve error if
+	 * something else went wrong
+	 */
+	int (*get_state_desc)(struct udevice *dev, char *buf, int maxsize);
+
+	/**
+	 * check_supported() - check if a bootmeth supports this bootdev
 	 *
 	 * This is optional. If not provided, the bootdev is assumed to be
 	 * supported
@@ -59,6 +93,22 @@ struct bootmeth_ops {
 	int (*read_bootflow)(struct udevice *dev, struct bootflow *bflow);
 
 	/**
+	 * set_bootflow() - set the bootflow for a device
+	 *
+	 * This provides a bootflow file to the bootmeth, to see if it is valid.
+	 * If it is, the bootflow is set up accordingly.
+	 *
+	 * @dev:	Bootmethod device to use
+	 * @bflow:	On entry, provides bootdev.
+	 *	Returns updated bootflow if found
+	 * @buf:	Buffer containing the possible bootflow file
+	 * @size:	Size of file
+	 * Return: 0 if OK, -ve on error
+	 */
+	int (*set_bootflow)(struct udevice *dev, struct bootflow *bflow,
+			    char *buf, int size);
+
+	/**
 	 * read_file() - read a file needed for a bootflow
 	 *
 	 * Read a file from the same place as the bootflow came from
@@ -74,14 +124,23 @@ struct bootmeth_ops {
 	 */
 	int (*read_file)(struct udevice *dev, struct bootflow *bflow,
 			 const char *file_path, ulong addr, ulong *sizep);
-
+#if CONFIG_IS_ENABLED(BOOTSTD_FULL)
+	/**
+	 * readall() - read all files for a bootflow
+	 *
+	 * @dev:	Bootmethod device to boot
+	 * @bflow:	Bootflow to read
+	 * Return: 0 if OK, -EIO on I/O error, other -ve on other error
+	 */
+	int (*read_all)(struct udevice *dev, struct bootflow *bflow);
+#endif /* BOOTSTD_FULL */
 	/**
 	 * boot() - boot a bootflow
 	 *
 	 * @dev:	Bootmethod device to boot
 	 * @bflow:	Bootflow to boot
 	 * Return: does not return on success, since it should boot the
-	 *	Operating Systemn. Returns -EFAULT if that fails, -ENOTSUPP if
+	 *	operating system. Returns -EFAULT if that fails, -ENOTSUPP if
 	 *	trying method resulted in finding out that is not actually
 	 *	supported for this boot and should not be tried again unless
 	 *	something changes, other -ve on other error
@@ -90,6 +149,24 @@ struct bootmeth_ops {
 };
 
 #define bootmeth_get_ops(dev)  ((struct bootmeth_ops *)(dev)->driver->ops)
+
+/**
+ * bootmeth_get_state_desc() - get detailed state information
+ *
+ * Produces a textual description of the state of the boot method. This
+ * can include newline characters if it extends to multiple lines. It
+ * must be a nul-terminated string.
+ *
+ * This may involve reading state from the system, e.g. some data in
+ * the firmware area.
+ *
+ * @dev:	Bootmethod device to check
+ * @buf:	Buffer to place the info in (terminator must fit)
+ * @maxsize:	Size of buffer
+ * Returns: 0 if OK, -ENOSPC is buffer is too small, other -ve error if
+ * something else went wrong
+ */
+int bootmeth_get_state_desc(struct udevice *dev, char *buf, int maxsize);
 
 /**
  * bootmeth_check() - check if a bootmeth supports this bootflow
@@ -127,6 +204,23 @@ int bootmeth_check(struct udevice *dev, struct bootflow_iter *iter);
 int bootmeth_read_bootflow(struct udevice *dev, struct bootflow *bflow);
 
 /**
+ * bootmeth_set_bootflow() - set the bootflow for a device
+ *
+ * This provides a bootflow file to the bootmeth, to see if it is valid.
+ * If it is, the bootflow is set up accordingly.
+ *
+ * @dev:	Bootmethod device to use
+ * @bflow:	On entry, provides bootdev.
+ *	Returns updated bootflow if found
+ * @buf:	Buffer containing the possible bootflow file (must be allocated
+ * by caller to @size + 1 bytes)
+ * @size:	Size of file
+ * Return: 0 if OK, -ve on error
+ */
+int bootmeth_set_bootflow(struct udevice *dev, struct bootflow *bflow,
+			  char *buf, int size);
+
+/**
  * bootmeth_read_file() - read a file needed for a bootflow
  *
  * Read a file from the same place as the bootflow came from
@@ -144,12 +238,26 @@ int bootmeth_read_file(struct udevice *dev, struct bootflow *bflow,
 		       const char *file_path, ulong addr, ulong *sizep);
 
 /**
+ * bootmeth_read_all() - read all bootflow files
+ *
+ * Some bootmeths delay reading of large files until booting is requested. This
+ * causes those files to be read.
+ *
+ * @dev:	Bootmethod device to use
+ * @bflow:	Bootflow to read
+ * Return: does not return on success, since it should boot the
+ *	operating system. Returns -EFAULT if that fails, other -ve on
+ *	other error
+ */
+int bootmeth_read_all(struct udevice *dev, struct bootflow *bflow);
+
+/**
  * bootmeth_boot() - boot a bootflow
  *
  * @dev:	Bootmethod device to boot
  * @bflow:	Bootflow to boot
  * Return: does not return on success, since it should boot the
- *	Operating Systemn. Returns -EFAULT if that fails, other -ve on
+ *	operating system. Returns -EFAULT if that fails, other -ve on
  *	other error
  */
 int bootmeth_boot(struct udevice *dev, struct bootflow *bflow);
@@ -158,14 +266,16 @@ int bootmeth_boot(struct udevice *dev, struct bootflow *bflow);
  * bootmeth_setup_iter_order() - Set up the ordering of bootmeths to scan
  *
  * This sets up the ordering information in @iter, based on the selected
- * ordering of the bootmethds in bootstd_priv->bootmeth_order. If there is no
+ * ordering of the boot methods in bootstd_priv->bootmeth_order. If there is no
  * ordering there, then all bootmethods are added
  *
  * @iter: Iterator to update with the order
+ * @include_global: true to add the global bootmeths, in which case they appear
+ * first
  * Return: 0 if OK, -ENOENT if no bootdevs, -ENOMEM if out of memory, other -ve
  *	on other error
  */
-int bootmeth_setup_iter_order(struct bootflow_iter *iter);
+int bootmeth_setup_iter_order(struct bootflow_iter *iter, bool include_global);
 
 /**
  * bootmeth_set_order() - Set the bootmeth order
@@ -173,12 +283,25 @@ int bootmeth_setup_iter_order(struct bootflow_iter *iter);
  * This selects the ordering to use for bootmeths
  *
  * @order_str: String containing the ordering. This is a comma-separate list of
- * bootmeth-device names, e.g. "syslinux,efi". If empty then a default ordering
+ * bootmeth-device names, e.g. "extlinux,efi". If empty then a default ordering
  * is used, based on the sequence number of devices (i.e. using aliases)
  * Return: 0 if OK, -ENODEV if an unknown bootmeth is mentioned, -ENOMEM if
  * out of memory, -ENOENT if there are no bootmeth devices
  */
 int bootmeth_set_order(const char *order_str);
+
+/**
+ * bootmeth_setup_fs() - Set up read to read a file
+ *
+ * We must redo the setup before each filesystem operation. This function
+ * handles that, including setting the filesystem type if a block device is not
+ * being used
+ *
+ * @bflow: Information about file to try
+ * @desc: Block descriptor to read from (NULL if not a block device)
+ * Return: 0 if OK, -ve on error
+ */
+int bootmeth_setup_fs(struct bootflow *bflow, struct blk_desc *desc);
 
 /**
  * bootmeth_try_file() - See we can access a given file
@@ -191,7 +314,7 @@ int bootmeth_set_order(const char *order_str);
  * caller before reading the file.
  *
  * @bflow: Information about file to try
- * @desc: Block descriptor to read from
+ * @desc: Block descriptor to read from (NULL for sandbox host)
  * @prefix: Filename prefix to prepend to @fname (NULL for none)
  * @fname: Filename to read
  * Return: 0 if OK, -ENOMEM if not enough memory to allocate bflow->fname,
@@ -217,6 +340,22 @@ int bootmeth_try_file(struct bootflow *bflow, struct blk_desc *desc,
 int bootmeth_alloc_file(struct bootflow *bflow, uint size_limit, uint align);
 
 /**
+ * bootmeth_alloc_other() - Allocate and read a file for a bootflow
+ *
+ * This reads an arbitrary file in the same directory as the bootflow,
+ * allocating memory for it. The buffer is one byte larger than the file length,
+ * so that it can be nul-terminated.
+ *
+ * @bflow: Information about file to read
+ * @fname: Filename to read from (within bootflow->subdir)
+ * @bufp: Returns a pointer to the allocated buffer
+ * @sizep: Returns the size of the buffer
+ * Return: 0 if OK,  -ENOMEM if out of memory, other -ve on other error
+ */
+int bootmeth_alloc_other(struct bootflow *bflow, const char *fname,
+			 void **bufp, uint *sizep);
+
+/**
  * bootmeth_common_read_file() - Common handler for reading a file
  *
  * Reads a named file from the same location as the bootflow file.
@@ -230,5 +369,17 @@ int bootmeth_alloc_file(struct bootflow *bflow, uint size_limit, uint align);
  */
 int bootmeth_common_read_file(struct udevice *dev, struct bootflow *bflow,
 			      const char *file_path, ulong addr, ulong *sizep);
+
+/**
+ * bootmeth_get_bootflow() - Get a bootflow from a global bootmeth
+ *
+ * Check the bootmeth for a bootflow which can be used. In this case the
+ * bootmeth handles all bootdev selection, etc.
+ *
+ * @dev: bootmeth device to read from
+ * @bflow: Bootflow information
+ * @return 0 on success, -ve if a bootflow could not be found or had an error
+ */
+int bootmeth_get_bootflow(struct udevice *dev, struct bootflow *bflow);
 
 #endif

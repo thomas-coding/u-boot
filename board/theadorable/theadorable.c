@@ -3,7 +3,6 @@
  * Copyright (C) 2015-2019 Stefan Roese <sr@denx.de>
  */
 
-#include <common.h>
 #include <command.h>
 #include <console.h>
 #include <dm.h>
@@ -208,9 +207,9 @@ int board_init(void)
 	 * Map SPI devices via MBUS so that they can be accessed via
 	 * the SPI direct access mode
 	 */
-	mbus_dt_setup_win(&mbus_state, SPI_BUS0_DEV1_BASE, SPI_BUS0_DEV1_SIZE,
+	mbus_dt_setup_win(SPI_BUS0_DEV1_BASE, SPI_BUS0_DEV1_SIZE,
 			  CPU_TARGET_DEVICEBUS_BOOTROM_SPI, CPU_ATTR_SPI0_CS1);
-	mbus_dt_setup_win(&mbus_state, SPI_BUS1_DEV2_BASE, SPI_BUS0_DEV1_SIZE,
+	mbus_dt_setup_win(SPI_BUS1_DEV2_BASE, SPI_BUS0_DEV1_SIZE,
 			  CPU_TARGET_DEVICEBUS_BOOTROM_SPI, CPU_ATTR_SPI1_CS2);
 
 	/*

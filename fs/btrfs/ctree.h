@@ -3,13 +3,12 @@
  * From linux/fs/btrfs/ctree.h
  *   Copyright (C) 2007,2008 Oracle.  All rights reserved.
  *
- * Modified in 2017 by Marek Behun, CZ.NIC, marek.behun@nic.cz
+ * Modified in 2017 by Marek Behún, CZ.NIC, kabel@kernel.org
  */
 
 #ifndef __BTRFS_CTREE_H__
 #define __BTRFS_CTREE_H__
 
-#include <common.h>
 #include <compiler.h>
 #include <linux/rbtree.h>
 #include <linux/bug.h>

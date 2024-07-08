@@ -3,8 +3,6 @@
  * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
  */
 
-#include <common.h>
-#include <flash.h>
 #include <malloc.h>
 #include <errno.h>
 #include <div64.h>

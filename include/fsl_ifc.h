@@ -9,10 +9,11 @@
 
 #ifdef CONFIG_FSL_IFC
 #include <config.h>
-#include <common.h>
 #include <part.h>
 #ifdef CONFIG_ARM
 #include <asm/arch/soc.h>
+#else
+#include <asm/ppc.h>
 #endif
 
 #define FSL_IFC_V1_1_0	0x01010000
@@ -801,7 +802,7 @@ void init_final_memctl_regs(void);
 #define IFC_RREGS_64KOFFSET	(64*1024)
 
 #define IFC_FCM_BASE_ADDR \
-	((struct fsl_ifc_fcm *)CONFIG_SYS_IFC_ADDR)
+	((struct fsl_ifc_fcm *)CFG_SYS_IFC_ADDR)
 
 #define get_ifc_cspr_ext(i)	\
 		(ifc_in32(&(IFC_FCM_BASE_ADDR)->cspr_cs[i].cspr_ext))

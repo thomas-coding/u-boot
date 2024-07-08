@@ -15,7 +15,6 @@
 #include <asm/mach-imx/hab.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
-#include <common.h>
 #include <env.h>
 #include <asm/arch/crm_regs.h>
 #include <netdev.h>
@@ -65,19 +64,6 @@ int power_init_board(void)
 	return 0;
 }
 #endif
-
-int board_eth_init(struct bd_info *bis)
-{
-	int ret = 0;
-
-#ifdef CONFIG_USB_ETHER
-	ret = usb_eth_initialize(bis);
-	if (ret < 0)
-		printf("Error %d registering USB ether.\n", ret);
-#endif
-
-	return ret;
-}
 
 int board_init(void)
 {

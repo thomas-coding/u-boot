@@ -15,8 +15,8 @@ import unittest
 from unittest import mock
 
 from dtoc import src_scan
-from patman import test_util
-from patman import tools
+from u_boot_pylib import test_util
+from u_boot_pylib import tools
 
 OUR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -151,6 +151,7 @@ class TestSrcScan(unittest.TestCase):
         self.assertEqual('UCLASS_I2C', drv.uclass_id)
         self.assertEqual(
             {'nvidia,tegra114-i2c': 'TYPE_114',
+             'nvidia,tegra124-i2c': 'TYPE_114',
              'nvidia,tegra20-i2c': 'TYPE_STD',
              'nvidia,tegra20-i2c-dvc': 'TYPE_DVC'}, drv.compat)
         self.assertEqual('i2c_bus', drv.priv)

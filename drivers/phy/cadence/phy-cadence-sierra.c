@@ -7,11 +7,10 @@
  * Copyright (c) 2018 Cadence Design Systems
  * Author: Alan Douglas <adouglas@cadence.com>
  *
- * Copyright (C) 2019 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (C) 2019 Texas Instruments Incorporated - https://www.ti.com/
  * Jean-Jacques Hiblot <jjhiblot@ti.com>
  *
  */
-#include <common.h>
 #include <clk.h>
 #include <linux/delay.h>
 #include <linux/clk-provider.h>

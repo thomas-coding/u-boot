@@ -19,9 +19,9 @@
  * This version now uses the ydevconfig mechanism to set up partitions.
  */
 
-#include <common.h>
 #include <div64.h>
 #include <malloc.h>
+#include <linux/printk.h>
 
 #include <config.h>
 #include "nand.h"

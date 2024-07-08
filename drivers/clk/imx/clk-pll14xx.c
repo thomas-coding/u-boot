@@ -5,7 +5,6 @@
  * Peng Fan <peng.fan@nxp.com>
  */
 
-#include <common.h>
 #include <asm/io.h>
 #include <malloc.h>
 #include <clk-uclass.h>
@@ -18,6 +17,7 @@
 #include <linux/iopoll.h>
 #include <clk.h>
 #include <div64.h>
+#include <linux/printk.h>
 
 #include "clk.h"
 

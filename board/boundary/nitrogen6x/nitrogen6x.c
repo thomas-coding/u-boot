@@ -4,7 +4,6 @@
  * Copyright (C) 2013, Boundary Devices <info@boundarydevices.com>
  */
 
-#include <common.h>
 #include <command.h>
 #include <env.h>
 #include <init.h>
@@ -929,7 +928,7 @@ U_BOOT_CMD(
 	"Returns 0 (true) to shell if key is pressed."
 );
 
-#ifdef CONFIG_PREBOOT
+#ifdef CONFIG_USE_PREBOOT
 static char const kbd_magic_prefix[] = "key_magic";
 static char const kbd_command_prefix[] = "key_cmd";
 
@@ -989,7 +988,7 @@ int misc_init_r(void)
 	gpio_request(IMX_GPIO_NR(2, 3), "search");
 	gpio_request(IMX_GPIO_NR(7, 13), "volup");
 	gpio_request(IMX_GPIO_NR(4, 5), "voldown");
-#ifdef CONFIG_PREBOOT
+#ifdef CONFIG_USE_PREBOOT
 	preboot_keys();
 #endif
 

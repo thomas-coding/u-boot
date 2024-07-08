@@ -2,7 +2,7 @@
 /*
  * Configuration for Xilinx Versal
  * (C) Copyright 2016 - 2018 Xilinx, Inc.
- * Michal Simek <michal.simek@xilinx.com>
+ * Michal Simek <michal.simek@amd.com>
  *
  * Based on Configuration for Xilinx ZynqMP
  */
@@ -14,10 +14,8 @@
 #define GICD_BASE	0xF9000000
 #define GICR_BASE	0xF9080000
 
-#define CONFIG_SYS_INIT_SP_ADDR		CONFIG_SYS_TEXT_BASE
-
 /* Serial setup */
-#define CONFIG_SYS_BAUDRATE_TABLE \
+#define CFG_SYS_BAUDRATE_TABLE \
 	{ 4800, 9600, 19200, 38400, 57600, 115200 }
 
 /* GUID for capsule updatable firmware image */
@@ -25,25 +23,11 @@
 	EFI_GUID(0x20c5fba5, 0x0171, 0x457f, 0xb9, 0xcd, \
 		 0xf5, 0x12, 0x9c, 0xd0, 0x72, 0x28)
 
-/* Miscellaneous configurable options */
-
-/* Monitor Command Prompt */
-/* Console I/O Buffer Size */
-#define CONFIG_SYS_CBSIZE		2048
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_MAXARGS		64
-
 #if defined(CONFIG_CMD_DFU)
 #define DFU_DEFAULT_POLL_TIMEOUT	300
-#define CONFIG_THOR_RESET_OFF
 #endif
 
 /* Ethernet driver */
-#if defined(CONFIG_ZYNQ_GEM)
-# define PHY_ANEG_TIMEOUT       20000
-#endif
-
-#define CONFIG_SYS_BOOTM_LEN	(100 * 1024 * 1024)
 
 #define ENV_MEM_LAYOUT_SETTINGS \
 	"fdt_addr_r=0x40000000\0" \
@@ -53,9 +37,10 @@
 	"kernel_size_r=0x10000000\0" \
 	"kernel_comp_addr_r=0x30000000\0" \
 	"kernel_comp_size=0x3C00000\0" \
-	"scriptaddr=0x20000000\0" \
 	"ramdisk_addr_r=0x02100000\0" \
 	"script_size_f=0x80000\0"
+
+#if defined(CONFIG_DISTRO_DEFAULTS)
 
 #if defined(CONFIG_MMC_SDHCI_ZYNQ)
 # define BOOT_TARGET_DEVICES_MMC(func)	func(MMC, mmc, 0) func(MMC, mmc, 1)
@@ -138,9 +123,13 @@
 
 #include <config_distro_bootcmd.h>
 
+#else /* CONFIG_DISTRO_DEFAULTS */
+# define BOOTENV
+#endif /* CONFIG_DISTRO_DEFAULTS */
+
 /* Initial environment variables */
-#ifndef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS \
+#ifndef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS \
 	ENV_MEM_LAYOUT_SETTINGS \
 	BOOTENV
 #endif

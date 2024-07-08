@@ -3,21 +3,43 @@
 Develop U-Boot
 ==============
 
+General
+-------
+
+.. toctree::
+   :maxdepth: 1
+
+   board_best_practices
+   codingstyle
+   designprinciples
+   docstyle
+   patman
+   process
+   release_cycle
+   security
+   sending_patches
+   system_configuration
+   ide_integration
+
 Implementation
 --------------
 
 .. toctree::
    :maxdepth: 1
 
+   directories
    bloblist
    bootstd
    ci_testing
    commands
    config_binding
+   cyclic
    devicetree/index
    distro
    driver-model/index
    environment
+   expo
+   cedit
    event
    global_data
    logging
@@ -26,7 +48,9 @@ Implementation
    printf
    smbios
    spl
+   falcon
    uefi/index
+   vbe
    version
 
 Debugging
@@ -36,6 +60,7 @@ Debugging
    :maxdepth: 1
 
    crash_dumps
+   gdb
    trace
 
 Packaging
@@ -65,7 +90,7 @@ Refactoring
 
    checkpatch
    coccinelle
-   moveconfig
+   qconfig
 
 Code quality
 ------------

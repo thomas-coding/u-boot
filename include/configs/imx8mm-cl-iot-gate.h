@@ -11,23 +11,13 @@
 #include <asm/arch/imx-regs.h>
 #include <config_distro_bootcmd.h>
 
-#define CONFIG_SYS_BOOTM_LEN		(32 * SZ_1M)
-#define CONFIG_SPL_MAX_SIZE		(148 * 1024)
-#define CONFIG_SYS_MONITOR_LEN		SZ_512K
-#define CONFIG_SYS_UBOOT_BASE	\
+#define CFG_SYS_UBOOT_BASE	\
 	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
 
 #ifdef CONFIG_SPL_BUILD
-#define CONFIG_SPL_STACK		0x920000
-#define CONFIG_SPL_BSS_START_ADDR	0x910000
-#define CONFIG_SPL_BSS_MAX_SIZE		SZ_8K	/* 8 KB */
-#define CONFIG_SYS_SPL_MALLOC_START	0x42200000
-#define CONFIG_SYS_SPL_MALLOC_SIZE	SZ_512K	/* 512 KB */
-
 /* malloc f used before GD_FLG_FULL_MALLOC_INIT set */
-#define CONFIG_MALLOC_F_ADDR		0x912000
+#define CFG_MALLOC_F_ADDR		0x912000
 /* For RAW image gives a error info not panic */
-#define CONFIG_SPL_ABORT_ON_RAW_IMAGE
 
 #endif
 
@@ -40,7 +30,7 @@
 	EFI_GUID(0x0bf1165c, 0x1831, 0x4864, 0x94, 0x5e, \
 		 0xac, 0x3d, 0x38, 0x48, 0xf4, 0x99)
 
-#if CONFIG_IS_ENABLED(CMD_MMC)
+#if IS_ENABLED(CONFIG_CMD_MMC)
 # define BOOT_TARGET_MMC(func) \
 	func(MMC, mmc, 2)      \
 	func(MMC, mmc, 0)
@@ -48,7 +38,7 @@
 # define BOOT_TARGET_MMC(func)
 #endif
 
-#if CONFIG_IS_ENABLED(CMD_USB)
+#if IS_ENABLED(CONFIG_CMD_USB)
 # define BOOT_TARGET_USB(func) func(USB, usb, 0)
 #else
 # define BOOT_TARGET_USB(func)
@@ -73,7 +63,7 @@
 	BOOT_TARGET_DHCP(func)
 
 /* Initial environment variables */
-#define CONFIG_EXTRA_ENV_SETTINGS		\
+#define CFG_EXTRA_ENV_SETTINGS		\
 	BOOTENV \
 	"script=boot.scr\0" \
 	"image=Image\0" \
@@ -133,38 +123,21 @@
 
 /* Link Definitions */
 
-#define CONFIG_SYS_INIT_RAM_ADDR	0x40000000
-#define CONFIG_SYS_INIT_RAM_SIZE	0x80000
-#define CONFIG_SYS_INIT_SP_OFFSET \
-	(CONFIG_SYS_INIT_RAM_SIZE - GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
+#define CFG_SYS_INIT_RAM_ADDR	0x40000000
+#define CFG_SYS_INIT_RAM_SIZE	0x80000
 
-
-#define CONFIG_SYS_SDRAM_BASE		0x40000000
+#define CFG_SYS_SDRAM_BASE		0x40000000
 #define PHYS_SDRAM			0x40000000
 #define PHYS_SDRAM_SIZE			0x80000000 /* 2GB DDR */
 
-#define CONFIG_MXC_UART_BASE		UART3_BASE_ADDR
-
-/* Monitor Command Prompt */
-#define CONFIG_SYS_CBSIZE		2048
-#define CONFIG_SYS_MAXARGS		64
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					sizeof(CONFIG_SYS_PROMPT) + 16)
-
 /* USDHC */
 
-#define CONFIG_SYS_FSL_USDHC_NUM	2
-#define CONFIG_SYS_FSL_ESDHC_ADDR	0
+#define CFG_SYS_FSL_USDHC_NUM	2
+#define CFG_SYS_FSL_ESDHC_ADDR	0
 
-#define CONFIG_FEC_MXC_PHYADDR		0
-#define FEC_QUIRK_ENET_MAC
+#define CFG_FEC_MXC_PHYADDR		-1 /* Auto search of PHY on MII */
 
 /* USB Configs */
-#define CONFIG_EHCI_HCD_INIT_AFTER_RESET
-#define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
-#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
+#define CFG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
 
 #endif /*__IMX8MM_CL_IOT_GATE_H*/

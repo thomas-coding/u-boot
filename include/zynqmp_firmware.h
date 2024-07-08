@@ -35,7 +35,7 @@ enum pm_api_id {
 	PM_FPGA_LOAD = 22,
 	PM_FPGA_GET_STATUS = 23,
 	PM_GET_CHIPID = 24,
-	/* ID 25 is been used by U-boot to process secure boot images */
+	/* ID 25 is been used by U-Boot to process secure boot images */
 	/* Secure library generic API functions */
 	PM_SECURE_SHA = 26,
 	PM_SECURE_RSA = 27,
@@ -158,6 +158,12 @@ enum dll_reset_type {
 	PM_DLL_RESET_ASSERT = 0,
 	PM_DLL_RESET_RELEASE = 1,
 	PM_DLL_RESET_PULSE = 2,
+};
+
+enum ospi_mux_select_type {
+	PM_OSPI_MUX_SEL_DMA,
+	PM_OSPI_MUX_SEL_LINEAR,
+	PM_OSPI_MUX_GET_MODE,
 };
 
 enum pm_query_id {
@@ -427,6 +433,7 @@ enum pm_gem_config_type {
 #define ZYNQMP_PM_VERSION_INVALID	~0
 
 #define PMUFW_V1_0	((1 << ZYNQMP_PM_VERSION_MAJOR_SHIFT) | 0)
+#define PMIO_NODE_ID_BASE		0x1410801B
 
 /*
  * Return payload size
@@ -440,13 +447,16 @@ enum pm_gem_config_type {
 unsigned int zynqmp_firmware_version(void);
 int zynqmp_pmufw_node(u32 id);
 int zynqmp_pmufw_config_close(void);
-void zynqmp_pmufw_load_config_object(const void *cfg_obj, size_t size);
+int zynqmp_pmufw_load_config_object(const void *cfg_obj, size_t size);
 int xilinx_pm_request(u32 api_id, u32 arg0, u32 arg1, u32 arg2,
 		      u32 arg3, u32 *ret_payload);
 int zynqmp_pm_set_sd_config(u32 node, enum pm_sd_config_type config, u32 value);
 int zynqmp_pm_set_gem_config(u32 node, enum pm_gem_config_type config,
 			     u32 value);
 int zynqmp_pm_is_function_supported(const u32 api_id, const u32 id);
+int zynqmp_mmio_read(const u32 address, u32 *value);
+int zynqmp_mmio_write(const u32 address, const u32 mask, const u32 value);
+int zynqmp_pm_feature(const u32 api_id);
 
 /* Type of Config Object */
 #define PM_CONFIG_OBJECT_TYPE_BASE	0x1U
@@ -482,5 +492,12 @@ enum zynqmp_pm_request_ack {
 #define FIRMWARE_VERSION_MASK		GENMASK(15, 0)
 /* PM API versions */
 #define PM_API_VERSION_2		2
+
+#define PM_PINCTRL_PARAM_SET_VERSION	2
+
+struct zynqmp_ipi_msg {
+	size_t len;
+	u32 *buf;
+};
 
 #endif /* _ZYNQMP_FIRMWARE_H_ */

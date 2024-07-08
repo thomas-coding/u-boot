@@ -22,10 +22,10 @@
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 #else
-#include <common.h>
 #include <dm.h>
 #include <dm/device_compat.h>
 #include <linux/bug.h>
+#include <linux/printk.h>
 #include <linux/usb/ch9.h>
 #include "linux-compat.h"
 #endif

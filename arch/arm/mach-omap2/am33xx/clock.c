@@ -5,9 +5,8 @@
  * Clock initialization for AM33XX boards.
  * Derived from OMAP4 boards
  *
- * Copyright (C) 2013, Texas Instruments, Incorporated - http://www.ti.com/
+ * Copyright (C) 2013, Texas Instruments, Incorporated - https://www.ti.com/
  */
-#include <common.h>
 #include <hang.h>
 #include <init.h>
 #include <log.h>

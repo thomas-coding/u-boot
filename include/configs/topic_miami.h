@@ -9,17 +9,11 @@
 #ifndef __CONFIG_TOPIC_MIAMI_H
 #define __CONFIG_TOPIC_MIAMI_H
 
-
 /* Speed up boot time by ignoring the environment which we never used */
 
 #include "zynq-common.h"
 
 /* Fixup settings */
-
-/* SPL settings */
-#undef CONFIG_SPL_MAX_FOOTPRINT
-#define CONFIG_SPL_MAX_FOOTPRINT	CONFIG_SYS_SPI_U_BOOT_OFFS
-#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME     "u-boot.img"
 
 /* Setup proper boot sequences for Miami boards */
 
@@ -49,8 +43,8 @@
 # define EXTRA_ENV_USB
 #endif
 
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS	\
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS	\
 	"kernel_image=uImage\0"	\
 	"kernel_addr=0x2080000\0" \
 	"ramdisk_image=uramdisk.image.gz\0"	\

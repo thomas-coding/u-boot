@@ -8,7 +8,7 @@
 import os
 import struct
 from dtoc import fdt_util
-from patman import tools
+from u_boot_pylib import tools
 
 from binman.entry import Entry
 from binman.etype.collection import Entry_collection
@@ -37,7 +37,8 @@ class Entry_pre_load(Entry_collection):
     """Pre load image header
 
     Properties / Entry arguments:
-        - pre-load-key-path: Path of the directory that store key (provided by the environment variable PRE_LOAD_KEY_PATH)
+        - pre-load-key-path: Path of the directory that store key (provided by
+          the environment variable PRE_LOAD_KEY_PATH)
         - content: List of phandles to entries to sign
         - algo-name: Hash and signature algo to use for the signature
         - padding-name: Name of the padding (pkcs-1.5 or pss)
@@ -80,7 +81,8 @@ class Entry_pre_load(Entry_collection):
 
     def ReadNode(self):
         super().ReadNode()
-        self.key_path, = self.GetEntryArgsOrProps([EntryArg('pre-load-key-path', str)])
+        self.key_path, = self.GetEntryArgsOrProps(
+            [EntryArg('pre-load-key-path', str)])
         if self.key_path is None:
             self.key_path = ''
 
@@ -97,8 +99,7 @@ class Entry_pre_load(Entry_collection):
             self.Raise(sign_name + " is not supported")
 
         # Read the key
-        with open(key_name, 'rb') as pem:
-            key = RSA.import_key(pem.read())
+        key = RSA.import_key(tools.read_file(key_name))
 
         # Check if the key has the expected size
         if key.size_in_bytes() != RSAS[sign_name]:

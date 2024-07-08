@@ -6,6 +6,8 @@
 #ifndef __DM_TEST_H
 #define __DM_TEST_H
 
+#include <linux/types.h>
+
 struct udevice;
 
 /**
@@ -90,6 +92,13 @@ struct dm_test_uclass_perdev_priv {
  */
 struct dm_test_uclass_priv {
 	int total_add;
+};
+
+/**
+ * struct dm_test_uclass_plat - private plat data for test uclass
+ */
+struct dm_test_uclass_plat {
+	char dummy[32];
 };
 
 /**

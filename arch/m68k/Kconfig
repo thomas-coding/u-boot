@@ -4,6 +4,9 @@ menu "M68000 architecture"
 config SYS_ARCH
 	default "m68k"
 
+config STATIC_RELA
+	default y
+
 # processor family
 config MCF520x
 	select OF_CONTROL
@@ -48,12 +51,6 @@ config MCF537x
 	bool
 
 config MCF5441x
-	select OF_CONTROL
-	select DM
-        select DM_SERIAL
-	bool
-
-config MCF5227x
 	select OF_CONTROL
 	select DM
         select DM_SERIAL
@@ -201,7 +198,16 @@ source "board/freescale/m5373evb/Kconfig"
 source "board/sysam/amcore/Kconfig"
 source "board/sysam/stmark2/Kconfig"
 
+config M68K_QEMU
+	bool "Build with workarounds for incomplete QEMU emulation"
+	help
+	  QEMU 8.x currently does not implement RAMBAR accesses and
+	  DMA timers. Enable this option for U-Boot CI purposes only
+	  to skip the RAMBAR accesses.
+
 config MCFTMR
 	bool "Use DMA timer"
+	default y if !M68K_QEMU
+	default n if M68K_QEMU
 
 endmenu

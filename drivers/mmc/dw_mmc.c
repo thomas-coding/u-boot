@@ -6,7 +6,6 @@
  */
 
 #include <bouncebuf.h>
-#include <common.h>
 #include <cpu_func.h>
 #include <errno.h>
 #include <log.h>
@@ -168,7 +167,8 @@ static int dwmci_data_transfer(struct dwmci_host *host, struct mmc_data *data)
 			if (data->flags == MMC_DATA_READ &&
 			    (mask & (DWMCI_INTMSK_RXDR | DWMCI_INTMSK_DTO))) {
 				dwmci_writel(host, DWMCI_RINTSTS,
-					     DWMCI_INTMSK_RXDR | DWMCI_INTMSK_DTO);
+					     mask & (DWMCI_INTMSK_RXDR |
+						     DWMCI_INTMSK_DTO));
 				while (size) {
 					ret = dwmci_fifo_ready(host,
 							DWMCI_FIFO_EMPTY,
@@ -261,8 +261,8 @@ static int dwmci_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd,
 
 	while (dwmci_readl(host, DWMCI_STATUS) & DWMCI_BUSY) {
 		if (get_timer(start) > timeout) {
-			debug("%s: Timeout on data busy\n", __func__);
-			return -ETIMEDOUT;
+			debug("%s: Timeout on data busy, continue anyway\n", __func__);
+			break;
 		}
 	}
 
@@ -507,6 +507,10 @@ static int dwmci_set_ios(struct mmc *mmc)
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
 	if (mmc->vqmmc_supply) {
 		int ret;
+
+		ret = regulator_set_enable_if_allowed(mmc->vqmmc_supply, false);
+		if (ret)
+			return ret;
 
 		if (mmc->signal_voltage == MMC_SIGNAL_VOLTAGE_180)
 			regulator_set_value(mmc->vqmmc_supply, 1800000);

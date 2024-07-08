@@ -17,22 +17,16 @@
 #define SYS_SDRAM_SIZE_1024		0x40000000
 
 /* ENV */
-#define CONFIG_SYS_FSL_QSPI_BASE	0x40000000
+#define CFG_SYS_FSL_QSPI_BASE	0x40000000
 
-#ifndef CONFIG_SPL_BUILD
 #undef BOOT_TARGET_DEVICES
 #define BOOT_TARGET_DEVICES(func) \
 	func(MMC, mmc, 0) \
 	func(USB, usb, 0) \
 	func(DHCP, dhcp, na)
-#endif
 
-#define CONFIG_PCIE1		/* PCIE controller 1 */
-
-#define CONFIG_PCI_SCAN_SHOW
-
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS		\
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS		\
 	"verify=no\0"				\
 	"initrd_high=0xffffffffffffffff\0"	\
 	"kernel_addr=0x01000000\0"		\

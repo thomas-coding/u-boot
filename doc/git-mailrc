@@ -22,6 +22,7 @@ alias apritzel       Andre Przywara <andre.przywara@arm.com>
 alias bmeng          Bin Meng <bmeng.cn@gmail.com>
 alias danielschwierzeck Daniel Schwierzeck <daniel.schwierzeck@gmail.com>
 alias dinh           Dinh Nguyen <dinguyen@kernel.org>
+alias ehristev       Eugen Hristev <eugen.hristev@collabora.com>
 alias hs             Heiko Schocher <hs@denx.de>
 alias freenix        Peng Fan <peng.fan@nxp.com>
 alias iwamatsu       Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
@@ -65,7 +66,8 @@ alias imx            uboot, sbabic
 alias kirkwood       uboot, stroese
 alias omap           ti
 alias pxa            uboot, marex
-alias rmobile        uboot, iwamatsu
+alias renesas        uboot, marex, iwamatsu
+alias rmobile        uboot, marex, iwamatsu
 alias s3c            samsung
 alias s5pc           samsung
 alias samsung        uboot, prom
@@ -95,7 +97,7 @@ alias nios2          nios
 
 alias powerpc        uboot, afleming, stroese, wd, priyankajain, mariosix
 alias ppc            powerpc
-alias mpc8xx         uboot, wd, Christophe Leroy <christophe.leroy@c-s.fr>
+alias mpc8xx         uboot, wd, Christophe Leroy <christophe.leroy@csgroup.eu>
 alias mpc83xx        uboot, mariosix
 alias mpc85xx        uboot, afleming, priyankajain
 
@@ -111,7 +113,6 @@ alias x86            uboot, sjg, bmeng
 alias dm             uboot, sjg
 alias cfi            uboot, stroese
 alias dfu            uboot, lukma
-alias efi            uboot, agraf
 alias eth            uboot, jhersh
 alias kerneldoc      uboot, marex
 alias fdt            uboot, sjg

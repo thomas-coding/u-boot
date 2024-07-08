@@ -6,7 +6,7 @@
  * Common ARM Integrator configuration settings
  */
 
-#define CONFIG_SYS_TIMERBASE		0x13000100	/* Timer1 */
+#define CFG_SYS_TIMERBASE		0x13000100	/* Timer1 */
 
 /*
  * The ARM boot monitor initializes the board.
@@ -30,12 +30,7 @@
  */
 #define PHYS_SDRAM_1		0x00000000	/* SDRAM Bank #1 */
 #define PHYS_SDRAM_1_SIZE	0x08000000	/* 128 MB */
-#define CONFIG_SYS_SDRAM_BASE	PHYS_SDRAM_1
-#define CONFIG_SYS_INIT_RAM_SIZE PHYS_SDRAM_1_SIZE
-#define CONFIG_SYS_GBL_DATA_OFFSET (CONFIG_SYS_SDRAM_BASE + \
-				    CONFIG_SYS_INIT_RAM_SIZE - \
-				    GENERATED_GBL_DATA_SIZE)
-#define CONFIG_SYS_INIT_SP_ADDR CONFIG_SYS_GBL_DATA_OFFSET
+#define CFG_SYS_SDRAM_BASE	PHYS_SDRAM_1
 
 /*
  * FLASH and environment organization
@@ -46,9 +41,6 @@
  * - SIB block
  * - U-Boot environment
  */
-#define CONFIG_SYS_FLASH_BASE		0x24000000
+#define CFG_SYS_FLASH_BASE		0x24000000
 
 /* Timeout values in ticks */
-#define CONFIG_SYS_FLASH_ERASE_TOUT	(2 * CONFIG_SYS_HZ) /* Erase Timeout */
-#define CONFIG_SYS_FLASH_WRITE_TOUT	(2 * CONFIG_SYS_HZ) /* Write Timeout */
-#define CONFIG_SYS_FLASH_EMPTY_INFO	/* flinfo indicates empty blocks */

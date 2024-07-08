@@ -6,7 +6,6 @@
  * Written by Simon Glass <sjg@chromium.org>
  */
 
-#include <common.h>
 #include <bootdev.h>
 #include <bootmeth.h>
 #include <bootstd.h>
@@ -69,7 +68,9 @@ static int do_bootmeth_list(struct cmd_tbl *cmdtp, int flag, int argc,
 			}
 		}
 
-		if (order == -1)
+		if (ucp->flags & BOOTMETHF_GLOBAL)
+			printf("%5s", "glob");
+		else if (order == -1)
 			printf("%5s", "-");
 		else
 			printf("%5x", order);
@@ -102,11 +103,9 @@ static int do_bootmeth_order(struct cmd_tbl *cmdtp, int flag, int argc,
 	return 0;
 }
 
-#ifdef CONFIG_SYS_LONGHELP
-static char bootmeth_help_text[] =
+U_BOOT_LONGHELP(bootmeth,
 	"list [-a]     - list available bootmeths (-a all)\n"
-	"bootmeth order [<bd> ...]  - select bootmeth order / subset to use";
-#endif
+	"bootmeth order [<bd> ...]  - select bootmeth order / subset to use");
 
 U_BOOT_CMD_WITH_SUBCMDS(bootmeth, "Boot methods", bootmeth_help_text,
 	U_BOOT_SUBCMD_MKENT(list, 2, 1, do_bootmeth_list),

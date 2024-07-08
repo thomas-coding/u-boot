@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
 
-#include <common.h>
 #include <linux/errno.h>
 #include <linux/delay.h>
 #include <asm/gpio.h>
@@ -830,8 +829,8 @@ static int max3420_udc_probe(struct udevice *dev)
 	cs = slave_pdata->cs;
 	speed = slave_pdata->max_hz;
 	mode = slave_pdata->mode;
-	spi_get_bus_and_cs(busnum, cs, speed, mode, "spi_generic_drv",
-			   NULL, &spid, &udc->slave);
+	_spi_get_bus_and_cs(busnum, cs, speed, mode, false, "spi_generic_drv",
+			    NULL, &spid, &udc->slave);
 
 	udc->dev = dev;
 	udc->gadget.ep0 = &udc->ep[0].ep_usb;
