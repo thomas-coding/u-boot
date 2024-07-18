@@ -1,0 +1,19 @@
+if TARGET_THOMAS_RISCV64
+config SYS_BOARD
+	default "riscv64"
+
+config SYS_VENDOR
+	default "thomas"
+
+config SYS_CONFIG_NAME
+	default "thomas_riscv64"
+
+config SYS_CPU
+	default "riscv64"
+
+config BOARD_SPECIFIC_OPTIONS
+	def_bool y
+	select THOMAS_RISCV64
+	select SUPPORT_SPL
+
+endif

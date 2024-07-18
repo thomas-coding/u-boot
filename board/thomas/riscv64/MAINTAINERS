@@ -1,0 +1,7 @@
++THOMAS RISCV64 BOARD
++M:
++S:     Maintained
++F:     arch/riscv/dts/thomas-riscv64.dts
++F:     board/thomas/riscv64/
++F:     include/configs/thomas_riscv64.h
++F:     configs/thomas_riscv64_defconfig

@@ -46,6 +46,10 @@ config TARGET_TH1520_LPI4A
 config TARGET_XILINX_MBV
 	bool "Support AMD/Xilinx MicroBlaze V"
 
+config TARGET_THOMAS_RISCV64
+    bool "Support thomas riscv64"
+    select OF_CONTROL
+
 endchoice
 
 config SYS_ICACHE_OFF
@@ -91,6 +95,7 @@ source "board/sophgo/milkv_duo/Kconfig"
 source "board/starfive/visionfive2/Kconfig"
 source "board/thead/th1520_lpi4a/Kconfig"
 source "board/xilinx/mbv/Kconfig"
+source "board/thomas/riscv64/Kconfig"
 
 # platform-specific options below
 source "arch/riscv/cpu/andes/Kconfig"
@@ -99,6 +104,7 @@ source "arch/riscv/cpu/fu540/Kconfig"
 source "arch/riscv/cpu/fu740/Kconfig"
 source "arch/riscv/cpu/generic/Kconfig"
 source "arch/riscv/cpu/jh7110/Kconfig"
+source "arch/riscv/cpu/riscv64/Kconfig"
 
 # architecture-specific options below
 
