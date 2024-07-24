@@ -1,0 +1,15 @@
+config SPL_FIP_IO
+	bool "Enable fip io driver support"
+	depends on SPL_FIP
+
+config SPL_FIP_IO_DUMMY
+	bool "Enable fip io dummy driver support"
+	depends on SPL_FIP_IO
+
+config SPL_FIP_IO_MEMORY
+	bool "Enable fip io memory driver support"
+	depends on SPL_FIP_IO
+
+config SPL_FIP_IO_BLOCK
+	bool "Enable fip io block driver support"
+	depends on SPL_FIP_IO

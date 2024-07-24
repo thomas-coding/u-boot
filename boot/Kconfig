@@ -161,6 +161,10 @@ config SPL_FIT
 	select SPL_HASH
 	select SPL_OF_LIBFDT
 
+config SPL_FIP
+	bool "Support FIP within SPL"
+	depends on SPL
+
 config SPL_FIT_PRINT
 	bool "Support FIT printing within SPL"
 	depends on SPL_FIT

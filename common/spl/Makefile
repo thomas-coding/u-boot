@@ -8,6 +8,7 @@
 
 ifdef CONFIG_SPL_BUILD
 obj-$(CONFIG_$(SPL_TPL_)FRAMEWORK) += spl.o
+obj-$(CONFIG_$(SPL_TPL_)FIP) += spl_fip.o
 obj-$(CONFIG_$(SPL_TPL_)BOOTROM_SUPPORT) += spl_bootrom.o
 obj-$(CONFIG_$(SPL_TPL_)LOAD_FIT) += spl_fit.o
 obj-$(CONFIG_$(SPL_TPL_)BLK_FS) += spl_blk_fs.o

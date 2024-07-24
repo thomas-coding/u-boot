@@ -2526,3 +2526,18 @@ FORCE:
 # Declare the contents of the PHONY variable as phony.  We keep that
 # information in a variable so we can use it in if_changed and friends.
 .PHONY: $(PHONY)
+
+# FIP
+FIPTOOLPATH		?=	tools/fiptool
+FIPTOOL			?=	${FIPTOOLPATH}/fiptool
+fiptool: FORCE
+	make -C ${FIPTOOLPATH} all
+
+FIP_ARGS := --soc-fw ${OPENSBI}
+FIP_ARGS += --nt-fw ${UBOOT}
+FIP_ARGS += --opensbi-dtb ${OPENSBI_DTB}
+
+fip.bin: FORCE fiptool
+	${FIPTOOL} create ${FIP_ARGS} $@
+	${FIPTOOL} info $@
+	@echo "Built $@ successfully"
