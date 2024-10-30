@@ -43,7 +43,6 @@
 #include <bootcount.h>
 #include <wdt.h>
 #include <video.h>
-#include <fip/spl_fip.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 DECLARE_BINMAN_MAGIC_SYM;
@@ -567,7 +566,6 @@ __weak int spl_check_board_image(struct spl_image_info *spl_image,
 	return 0;
 }
 
-#if !defined(CONFIG_SPL_FIP)
 static int spl_load_image(struct spl_image_info *spl_image,
 			  struct spl_image_loader *loader)
 {
@@ -647,7 +645,6 @@ static int boot_from_devices(struct spl_image_info *spl_image,
 
 	return ret;
 }
-#endif
 
 #if defined(CONFIG_SPL_FRAMEWORK_BOARD_INIT_F)
 void board_init_f(ulong dummy)
@@ -668,8 +665,6 @@ void board_init_f(ulong dummy)
 
 void board_init_r(gd_t *dummy1, ulong dummy2)
 {
-
-#if !defined(CONFIG_SPL_FIP)
 	u32 spl_boot_list[] = {
 		BOOT_DEVICE_NONE,
 		BOOT_DEVICE_NONE,
@@ -677,7 +672,6 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		BOOT_DEVICE_NONE,
 		BOOT_DEVICE_NONE,
 	};
-#endif
 	typedef void __noreturn (*jump_to_image_t)(struct spl_image_info *);
 	jump_to_image_t jump_to_image = &jump_to_image_no_args;
 	struct spl_image_info spl_image;
@@ -744,7 +738,6 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 		dm_dump_mem(&mem);
 	}
 
-#if !defined(CONFIG_SPL_FIP)
 	memset(&spl_image, '\0', sizeof(spl_image));
 	if (IS_ENABLED(CONFIG_SPL_OS_BOOT))
 		spl_image.arg = (void *)SPL_PAYLOAD_ARGS_ADDR;
@@ -763,11 +756,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
 	}
 
 	spl_perform_fixups(&spl_image);
-#else
-	spl_fip_io_setup();
-	spl_fip_load_image();
-	spl_fip_prepare_jump(&spl_image);
-#endif
+
 	os = spl_image.os;
 	if (os == IH_OS_U_BOOT) {
 		debug("Jumping to %s...\n", spl_phase_name(spl_next_phase()));
